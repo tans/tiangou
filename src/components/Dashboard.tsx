@@ -1,114 +1,46 @@
 import React from 'react';
-import { WalletButton } from './WalletButton';
+
+import { CompactSniperBar } from './CompactSniperBar';
+import { LivePricePanel } from './LivePricePanel';
+import { PortalEventStream } from './PortalEventStream';
 import { StatusIndicator } from './StatusIndicator';
-import { TokenMonitor } from './TokenMonitor';
-import { FilterPanel } from './FilterPanel';
-import { SniperConfigPanel } from './SniperConfigPanel';
-import { TransactionTable } from './TransactionTable';
-import { useSniperStore } from '@/store/sniper';
-import { Zap, Activity } from 'lucide-react';
+import { WalletButton } from './WalletButton';
 
 export function Dashboard() {
-  const { transactions, bnbBalance, filters, detectedTokens } = useSniperStore();
-
-  // Calculate stats
-  const successCount = transactions.filter(tx => tx.status === 'success').length;
-  const failCount = transactions.filter(tx => tx.status === 'failed').length;
-  const pendingCount = transactions.filter(tx => tx.status === 'pending').length;
-
   return (
     <div className="min-h-screen bg-background grid-pattern">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <svg className="h-8 w-8 text-neon-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="22" y1="12" x2="18" y2="12" />
-                  <line x1="6" y1="12" x2="2" y2="12" />
-                  <line x1="12" y1="6" x2="12" y2="2" />
-                  <line x1="12" y1="22" x2="12" y2="18" />
-                </svg>
-                <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-neon-green pulse-dot" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold tracking-tight">Flap 狙击机器人</h1>
-                <p className="text-xs text-muted-foreground">自动买入新代币</p>
-              </div>
+      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/90 backdrop-blur-xl">
+        <div className="container mx-auto flex items-center justify-between gap-3 px-3 py-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="relative">
+              <svg className="h-7 w-7 text-neon-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="22" y1="12" x2="18" y2="12" />
+                <line x1="6" y1="12" x2="2" y2="12" />
+                <line x1="12" y1="6" x2="12" y2="2" />
+                <line x1="12" y1="22" x2="12" y2="18" />
+              </svg>
+              <div className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-neon-green pulse-dot" />
             </div>
-            <div className="flex items-center gap-4">
-              <StatusIndicator />
-              <WalletButton />
+            <div className="min-w-0">
+              <h1 className="truncate text-base font-semibold tracking-tight">Flap Portal 控制台</h1>
+              <p className="text-[11px] text-muted-foreground">全事件流 + 最新 20 币价</p>
             </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-3">
+            <StatusIndicator />
+            <WalletButton />
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-6">
-        {/* Stats Bar */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="rounded-xl border border-border/50 bg-card/50 backdrop-blur p-4">
-            <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
-              <Activity className="h-4 w-4" />
-              总交易数
-            </div>
-            <p className="text-2xl font-bold font-mono text-neon-green">{transactions.length}</p>
-          </div>
-          <div className="rounded-xl border border-border/50 bg-card/50 backdrop-blur p-4">
-            <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
-              <svg className="h-4 w-4 text-neon-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-              成功
-            </div>
-            <p className="text-2xl font-bold font-mono text-neon-green">{successCount}</p>
-          </div>
-          <div className="rounded-xl border border-border/50 bg-card/50 backdrop-blur p-4">
-            <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
-              <svg className="h-4 w-4 text-neon-red" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-              失败
-            </div>
-            <p className="text-2xl font-bold font-mono text-neon-red">{failCount}</p>
-          </div>
-          <div className="rounded-xl border border-border/50 bg-card/50 backdrop-blur p-4">
-            <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
-              <Zap className="h-4 w-4" />
-              BNB 余额
-            </div>
-            <p className="text-2xl font-bold font-mono text-neon-blue">
-              {(Number(bnbBalance) / 1e18).toFixed(4)} <span className="text-sm">BNB</span>
-            </p>
-          </div>
+      <main className="container mx-auto space-y-3 px-3 py-3">
+        <CompactSniperBar />
+
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1.7fr_1fr]">
+          <PortalEventStream />
+          <LivePricePanel />
         </div>
-
-        {/* Main Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Token Monitor */}
-          <div className="lg:col-span-2 space-y-6">
-            <TokenMonitor />
-            <TransactionTable />
-          </div>
-
-          {/* Right Column - Config */}
-          <div className="space-y-6">
-            <SniperConfigPanel />
-            <FilterPanel />
-          </div>
-        </div>
-
-        {/* Footer */}
-        <footer className="mt-12 pt-6 border-t border-border/50 text-center text-sm text-muted-foreground">
-          <p>Flap Protocol • BNB Chain</p>
-          <p className="mt-1 text-xs">
-            已检测 {detectedTokens.length} 个代币 • 过滤器: {filters.enabled ? '已启用' : '已禁用'}
-          </p>
-        </footer>
       </main>
     </div>
   );

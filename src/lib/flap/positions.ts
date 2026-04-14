@@ -1,5 +1,5 @@
 import type { Position, TakeProfitStep } from '../../store/sniper';
-import { FlapTokenFeedItem } from './types';
+import type { FlapTokenFeedItem } from './types';
 
 const POSITIONS_STORAGE_KEY = 'flap_positions';
 

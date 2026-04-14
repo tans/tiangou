@@ -1,10 +1,10 @@
 import { parseEther } from 'viem';
 import { useSniperStore } from '@/store/sniper';
-import { FlapTokenFeedItem } from './flap/types';
+import type { FlapTokenFeedItem } from './flap/types';
 import { startTokenFeedPolling, stopTokenFeedPolling } from './flap/indexer';
 import { quoteExactInput, buyToken, sellToken } from './flap/trading';
 import { createPosition, updatePosition, savePositions, loadPositions } from './flap/positions';
-import { isWalletConnected, getAccountAddress, setRpcUrl } from './flap/client';
+import { isWalletConnected, getAccountAddress } from './flap/client';
 import { getBnbBalance } from './flap/trading';
 
 // One hour in milliseconds
@@ -56,7 +56,7 @@ class SniperEngine {
     }
 
     // Auto-start monitoring
-    await this.startMonitoring(true);
+    await this.startMonitoring();
   }
 
   /**

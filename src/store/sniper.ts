@@ -1,6 +1,11 @@
 import { create } from 'zustand';
 import { type Address } from 'viem';
-import { FlapTokenFeedItem } from '../lib/flap/types';
+import type {
+  FlapTokenFeedItem,
+  LiveTokenQuote,
+  PortalStreamEvent,
+  PortalTokenMeta,
+} from '../lib/flap/types';
 
 // Take Profit Step
 export interface TakeProfitStep {
@@ -79,6 +84,9 @@ interface SniperState {
   status: MonitorStatus;
   detectedTokens: FlapTokenFeedItem[];
   recentToken: FlapTokenFeedItem | null;
+  portalEvents: PortalStreamEvent[];
+  latestCreatedTokens: PortalTokenMeta[];
+  liveQuotes: Map<Address, LiveTokenQuote>;
 
   // Positions
   positions: Position[];
@@ -113,6 +121,10 @@ interface SniperState {
   setCurrentQuote: (tokenAddress: Address, quote: bigint) => void;
   clearTokens: () => void;
   setTokens: (tokens: FlapTokenFeedItem[]) => void;
+  setPortalEvents: (events: PortalStreamEvent[]) => void;
+  prependPortalEvents: (events: PortalStreamEvent[]) => void;
+  setLatestCreatedTokens: (tokens: PortalTokenMeta[]) => void;
+  upsertLiveQuote: (quote: LiveTokenQuote) => void;
 }
 
 const DEFAULT_TP1: TakeProfitStep = {
@@ -138,6 +150,9 @@ export const useSniperStore = create<SniperState>((set) => ({
   status: 'idle',
   detectedTokens: [],
   recentToken: null,
+  portalEvents: [],
+  latestCreatedTokens: [],
+  liveQuotes: new Map(),
 
   positions: [],
 
@@ -224,4 +239,18 @@ export const useSniperStore = create<SniperState>((set) => ({
   clearTokens: () => set({ detectedTokens: [], recentToken: null }),
 
   setTokens: (tokens) => set({ detectedTokens: tokens, recentToken: tokens[0] || null }),
+
+  setPortalEvents: (events) => set({ portalEvents: events }),
+
+  prependPortalEvents: (events) => set((state) => ({
+    portalEvents: [...events, ...state.portalEvents].slice(0, 100),
+  })),
+
+  setLatestCreatedTokens: (tokens) => set({ latestCreatedTokens: tokens }),
+
+  upsertLiveQuote: (quote) => set((state) => {
+    const next = new Map(state.liveQuotes);
+    next.set(quote.address, quote);
+    return { liveQuotes: next };
+  }),
 }));

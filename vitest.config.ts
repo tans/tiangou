@@ -1,10 +1,13 @@
+import { fileURLToPath } from 'node:url';
+
 import { defineConfig } from 'vitest/config';
-import react from '@astrojs/react';
-import tailwind from '@astrojs/tailwind';
-import astro from 'astro/config';
 
 export default defineConfig({
-  plugins: [react(), tailwind(), astro()],
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
   test: {
     globals: true,
     environment: 'happy-dom',

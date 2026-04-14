@@ -29,7 +29,7 @@ export function WalletButton() {
     setStatus('connecting');
 
     try {
-      initWalletClient(privateKey.trim(), rpcUrl);
+      initWalletClient(privateKey.trim(), config.rpcUrl);
       const addr = getAccountAddress();
       if (!addr) {
         throw new Error('无效的私钥');
@@ -160,18 +160,6 @@ export function WalletButton() {
             <p className="text-xs text-muted-foreground">
               警告：不要在不信任的网站上输入私钥。您的私钥仅存储在本地浏览器中。
             </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="rpc-url">RPC 节点</Label>
-            <Input
-              id="rpc-url"
-              type="text"
-              placeholder="https://bsc-dataseed.binance.org/"
-              value={rpcUrl}
-              onChange={(e) => setRpcUrlState(e.target.value)}
-              className="font-mono text-sm"
-            />
           </div>
 
           {error && (

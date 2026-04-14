@@ -1,4 +1,4 @@
-import { getContract } from 'viem';
+import { readContract } from 'viem/actions';
 import { FLAP_PORTAL_ABI } from './abi';
 import { FLAP_PORTAL_ADDRESSES, BNB_MAINNET_CHAIN_ID, NATIVE_TOKEN_SENTINEL } from './constants';
 import { getPublicClient, walletClient, getAccountAddress } from './client';
@@ -13,21 +13,18 @@ export async function quoteExactInput(
   outputToken: string,
   inputAmount: bigint
 ): Promise<bigint> {
-  const contract = getContract({
+  const result = await readContract(getPublicClient(), {
     address: FLAP_PORTAL_ADDRESS as `0x${string}`,
     abi: FLAP_PORTAL_ABI,
-    client: getPublicClient(),
-  });
-
-  const result = await contract.read.quoteExactInput([
-    {
+    functionName: 'quoteExactInput',
+    args: [{
       inputToken: inputToken as `0x${string}`,
       outputToken: outputToken as `0x${string}`,
       inputAmount,
-    },
-  ]) as bigint;
+    }],
+  });
 
-  return result;
+  return result as bigint;
 }
 
 /**
