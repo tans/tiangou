@@ -3,12 +3,24 @@ import React from 'react';
 import { useSniperStore } from '@/store/sniper';
 import { formatAddress, formatTimestamp } from '@/lib/utils';
 
-function formatBnbPrice(value: bigint | null): string {
-  if (value === null) {
+function formatBnbPrice(value: number | null): string {
+  if (value === null || !Number.isFinite(value)) {
     return '--';
   }
 
-  return `${(Number(value) / 1e18).toFixed(6)} BNB`;
+  if (value === 0) {
+    return '0 BNB';
+  }
+
+  if (value < 0.000001) {
+    return `${value.toExponential(2)} BNB`;
+  }
+
+  if (value < 0.01) {
+    return `${value.toFixed(8)} BNB`;
+  }
+
+  return `${value.toFixed(6)} BNB`;
 }
 
 export function LivePricePanel() {
@@ -50,10 +62,14 @@ export function LivePricePanel() {
                     </div>
                     <div className="text-right">
                       <div className="font-mono text-xs text-neon-green">
-                        {formatBnbPrice(quote?.price ?? null)}
+                        {formatBnbPrice(quote?.priceInBnb ?? null)}
                       </div>
                       <div className="text-[10px] text-muted-foreground">
-                        {quote?.updatedAt ? formatTimestamp(quote.updatedAt) : '未刷新'}
+                        {quote?.stale
+                          ? '报价失败'
+                          : quote?.updatedAt
+                            ? `${formatTimestamp(quote.updatedAt)} · ${quote.quoteInputBnb} BNB`
+                            : '未刷新'}
                       </div>
                     </div>
                   </div>

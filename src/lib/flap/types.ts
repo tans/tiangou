@@ -44,7 +44,9 @@ export interface PortalStreamEvent {
 }
 
 export interface LiveTokenQuote extends PortalTokenMeta {
-  price: bigint | null;
+  priceInBnb: number | null;
+  quoteInputBnb: number | null;
+  outputAmount: bigint | null;
   updatedAt: number | null;
   stale: boolean;
 }

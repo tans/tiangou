@@ -13,7 +13,8 @@ const ONE_HOUR = 60 * 60 * 1000;
 const BLOCK_TIME = 3;
 const BLOCKS_PER_HOUR = Math.floor(ONE_HOUR / 1000 / BLOCK_TIME);
 const CHUNK_SIZE = 500n;
-const PRICE_INPUT_AMOUNT = parseEther('1');
+const PRICE_INPUT_AMOUNT = parseEther('0.01');
+const PRICE_INPUT_BNB = 0.01;
 
 let pollingInterval: ReturnType<typeof setInterval> | null = null;
 let tokenFeedCallback: ((tokens: FlapTokenFeedItem[], isInitial: boolean) => void) | null = null;
@@ -57,12 +58,12 @@ function createFeedToken(meta: PortalTokenMeta): FlapTokenFeedItem {
   };
 }
 
-function toEventTime(ts: unknown, fallbackBlockNumber: bigint): number {
+function toEventTime(ts: unknown): number {
   if (typeof ts === 'bigint') {
     return Number(ts) * 1000;
   }
 
-  return Number(fallbackBlockNumber) * 1000;
+  return Date.now();
 }
 
 function normalizeEvent(eventName: typeof FLAP_PORTAL_EVENTS[number]['name'], log: any): PortalStreamEvent {
@@ -87,7 +88,7 @@ function normalizeEvent(eventName: typeof FLAP_PORTAL_EVENTS[number]['name'], lo
     token,
     symbol,
     name,
-    ts: toEventTime(args.ts, log.blockNumber),
+    ts: toEventTime(args.ts),
     blockNumber: log.blockNumber,
     txHash: log.transactionHash,
     details: args,
@@ -144,17 +145,26 @@ async function refreshLiveQuotes(tokens: PortalTokenMeta[]) {
     let quote: LiveTokenQuote;
 
     try {
-      const price = await quoteExactInput(token.address, NATIVE_TOKEN_SENTINEL, PRICE_INPUT_AMOUNT);
+      const outputAmount = await quoteExactInput(NATIVE_TOKEN_SENTINEL, token.address, PRICE_INPUT_AMOUNT);
+      const normalizedOutput = Number(outputAmount) / 1e18;
+      const priceInBnb = normalizedOutput > 0
+        ? PRICE_INPUT_BNB / normalizedOutput
+        : null;
+
       quote = {
         ...token,
-        price,
+        priceInBnb,
+        quoteInputBnb: PRICE_INPUT_BNB,
+        outputAmount,
         updatedAt: Date.now(),
         stale: false,
       };
     } catch {
       quote = {
         ...token,
-        price: null,
+        priceInBnb: null,
+        quoteInputBnb: PRICE_INPUT_BNB,
+        outputAmount: null,
         updatedAt: Date.now(),
         stale: true,
       };

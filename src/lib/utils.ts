@@ -18,7 +18,12 @@ export function formatNumber(num: number, decimals = 2): string {
 }
 
 export function formatTimestamp(timestamp: number): string {
-  return new Date(timestamp).toLocaleTimeString('en-US', {
+  if (!Number.isFinite(timestamp)) return '--:--:--';
+
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return '--:--:--';
+
+  return date.toLocaleTimeString('en-US', {
     hour12: false,
     hour: '2-digit',
     minute: '2-digit',
