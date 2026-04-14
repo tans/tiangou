@@ -6,11 +6,10 @@ import { FilterPanel } from './FilterPanel';
 import { SniperConfigPanel } from './SniperConfigPanel';
 import { TransactionTable } from './TransactionTable';
 import { useSniperStore } from '@/store/sniper';
-import { formatNumber } from '@/lib/utils';
 import { Zap, Activity } from 'lucide-react';
 
 export function Dashboard() {
-  const { transactions, gasPrice, filters, detectedTokens } = useSniperStore();
+  const { transactions, bnbBalance, filters, detectedTokens } = useSniperStore();
 
   // Calculate stats
   const successCount = transactions.filter(tx => tx.status === 'success').length;
@@ -35,8 +34,8 @@ export function Dashboard() {
                 <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-neon-green pulse-dot" />
               </div>
               <div>
-                <h1 className="text-xl font-bold tracking-tight">Sniper Bot</h1>
-                <p className="text-xs text-muted-foreground">Auto-buy new tokens</p>
+                <h1 className="text-xl font-bold tracking-tight">Flap 狙击机器人</h1>
+                <p className="text-xs text-muted-foreground">自动买入新代币</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
@@ -54,7 +53,7 @@ export function Dashboard() {
           <div className="rounded-xl border border-border/50 bg-card/50 backdrop-blur p-4">
             <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
               <Activity className="h-4 w-4" />
-              Total Sniped
+              总交易数
             </div>
             <p className="text-2xl font-bold font-mono text-neon-green">{transactions.length}</p>
           </div>
@@ -63,7 +62,7 @@ export function Dashboard() {
               <svg className="h-4 w-4 text-neon-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polyline points="20 6 9 17 4 12" />
               </svg>
-              Success
+              成功
             </div>
             <p className="text-2xl font-bold font-mono text-neon-green">{successCount}</p>
           </div>
@@ -73,17 +72,17 @@ export function Dashboard() {
                 <line x1="18" y1="6" x2="6" y2="18" />
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
-              Failed
+              失败
             </div>
             <p className="text-2xl font-bold font-mono text-neon-red">{failCount}</p>
           </div>
           <div className="rounded-xl border border-border/50 bg-card/50 backdrop-blur p-4">
             <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
               <Zap className="h-4 w-4" />
-              Gas Price
+              BNB 余额
             </div>
             <p className="text-2xl font-bold font-mono text-neon-blue">
-              {formatNumber(Number(gasPrice) / 1e9, 1)} <span className="text-sm">Gwei</span>
+              {(Number(bnbBalance) / 1e18).toFixed(4)} <span className="text-sm">BNB</span>
             </p>
           </div>
         </div>
@@ -105,9 +104,9 @@ export function Dashboard() {
 
         {/* Footer */}
         <footer className="mt-12 pt-6 border-t border-border/50 text-center text-sm text-muted-foreground">
-          <p>Built with Astro + Viem + shadcn/ui</p>
+          <p>Flap Protocol • BNB Chain</p>
           <p className="mt-1 text-xs">
-            Detected {detectedTokens.length} tokens • Filters: {filters.enabled ? 'Active' : 'Disabled'}
+            已检测 {detectedTokens.length} 个代币 • 过滤器: {filters.enabled ? '已启用' : '已禁用'}
           </p>
         </footer>
       </main>

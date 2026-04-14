@@ -4,22 +4,27 @@ import { cn } from '@/lib/utils';
 
 const statusConfig: Record<MonitorStatus, { label: string; color: string; animation: string }> = {
   idle: {
-    label: 'Offline',
+    label: '空闲',
     color: 'bg-muted',
     animation: '',
   },
   connecting: {
-    label: 'Connecting...',
+    label: '连接中',
     color: 'bg-neon-yellow',
     animation: 'animate-pulse',
   },
   monitoring: {
-    label: 'Monitoring',
+    label: '监控中',
     color: 'bg-neon-green',
     animation: 'pulse-dot',
   },
+  sniping: {
+    label: '狙击中',
+    color: 'bg-neon-blue',
+    animation: 'animate-pulse',
+  },
   error: {
-    label: 'Error',
+    label: '错误',
     color: 'bg-neon-red',
     animation: '',
   },
