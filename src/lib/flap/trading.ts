@@ -1,7 +1,7 @@
-import { getContract, parseUnits, formatUnits } from 'viem';
+import { getContract } from 'viem';
 import { FLAP_PORTAL_ABI } from './abi';
 import { FLAP_PORTAL_ADDRESSES, BNB_MAINNET_CHAIN_ID, NATIVE_TOKEN_SENTINEL } from './constants';
-import { publicClient, walletClient, getAccountAddress } from './client';
+import { getPublicClient, walletClient, getAccountAddress } from './client';
 
 const FLAP_PORTAL_ADDRESS = FLAP_PORTAL_ADDRESSES[BNB_MAINNET_CHAIN_ID];
 
@@ -16,7 +16,7 @@ export async function quoteExactInput(
   const contract = getContract({
     address: FLAP_PORTAL_ADDRESS as `0x${string}`,
     abi: FLAP_PORTAL_ABI,
-    client: publicClient,
+    client: getPublicClient(),
   });
 
   const result = await contract.read.quoteExactInput([
@@ -112,5 +112,5 @@ export async function sellToken(
  * Get BNB balance for an address
  */
 export async function getBnbBalance(address: string): Promise<bigint> {
-  return publicClient.getBalance({ address: address as `0x${string}` });
+  return getPublicClient().getBalance({ address: address as `0x${string}` });
 }

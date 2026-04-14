@@ -3,19 +3,32 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { bsc } from 'viem/chains';
 import { FLAP_PORTAL_ADDRESSES, BNB_MAINNET_CHAIN_ID, NATIVE_TOKEN_SENTINEL } from './constants';
 
-// BNB Chain configuration
-const bnbChain = {
-  ...bsc,
-  id: BNB_MAINNET_CHAIN_ID,
-  rpcUrls: {
-    default: { http: ['https://bsc-dataseed.binance.org/'] },
-    public: { http: ['https://bsc-dataseed.binance.org/'] },
-  },
-};
+// Default RPC endpoints
+const DEFAULT_RPC_URLS = [
+  'https://bsc-dataseed.binance.org/',
+  'https://bsc-dataseed1.binance.org/',
+  'https://bsc-dataseed2.binance.org/',
+  'https://rpc.ankr.com/bsc',
+];
+
+// BNB Chain configuration factory
+function createBnbChain(rpcUrl?: string) {
+  return {
+    ...bsc,
+    id: BNB_MAINNET_CHAIN_ID,
+    rpcUrls: {
+      default: { http: [rpcUrl || DEFAULT_RPC_URLS[0]] },
+      public: { http: [rpcUrl || DEFAULT_RPC_URLS[0]] },
+    },
+  };
+}
+
+// Current RPC URL
+let currentRpcUrl = DEFAULT_RPC_URLS[0];
 
 // Public client for reading blockchain data
-export const publicClient = createPublicClient({
-  chain: bnbChain,
+let publicClient = createPublicClient({
+  chain: createBnbChain(),
   transport: http(),
 });
 
@@ -27,18 +40,63 @@ let currentAccount: ReturnType<typeof privateKeyToAccount> | null = null;
 export let walletClient: FlapWalletClient | null = null;
 
 /**
- * Initialize wallet client with private key
- * @param privateKey - Hex string (with or without 0x prefix)
+ * Set custom RPC URL
  */
-export function initWalletClient(privateKey: string): void {
+export function setRpcUrl(rpcUrl: string): void {
+  currentRpcUrl = rpcUrl;
+
+  // Recreate public client with new RPC
+  publicClient = createPublicClient({
+    chain: createBnbChain(rpcUrl),
+    transport: http(),
+  });
+
+  // Recreate wallet client if connected
+  if (walletClient && currentAccount) {
+    walletClient = createWalletClient({
+      account: currentAccount,
+      chain: createBnbChain(rpcUrl),
+      transport: http(),
+    });
+  }
+}
+
+/**
+ * Get current RPC URL
+ */
+export function getRpcUrl(): string {
+  return currentRpcUrl;
+}
+
+/**
+ * Get public client
+ */
+export function getPublicClient() {
+  return publicClient;
+}
+
+/**
+ * Initialize wallet client with private key
+ */
+export function initWalletClient(privateKey: string, rpcUrl?: string): void {
   const key = privateKey.startsWith('0x') ? privateKey : `0x${privateKey}`;
   currentAccount = privateKeyToAccount(key as `0x${string}`);
 
+  const chain = createBnbChain(rpcUrl || currentRpcUrl);
+
   walletClient = createWalletClient({
     account: currentAccount,
-    chain: bnbChain,
+    chain,
     transport: http(),
   });
+
+  // Update public client to use the same RPC
+  if (rpcUrl) {
+    publicClient = createPublicClient({
+      chain,
+      transport: http(),
+    });
+  }
 }
 
 /**
@@ -66,3 +124,8 @@ export { NATIVE_TOKEN_SENTINEL };
 export function getFlapPortalAddress(): string {
   return FLAP_PORTAL_ADDRESSES[BNB_MAINNET_CHAIN_ID];
 }
+
+/**
+ * Available RPC endpoints
+ */
+export const AVAILABLE_RPC_URLS = DEFAULT_RPC_URLS;

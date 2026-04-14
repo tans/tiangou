@@ -64,6 +64,7 @@ export interface SniperConfig {
   takeProfitStep1: TakeProfitStep;
   takeProfitStep2: TakeProfitStep;
   autoSnipe: boolean;
+  rpcUrl: string;              // custom RPC URL
 }
 
 export type MonitorStatus = 'idle' | 'connecting' | 'monitoring' | 'sniping' | 'error';
@@ -111,6 +112,7 @@ interface SniperState {
   removePosition: (positionId: string) => void;
   setCurrentQuote: (tokenAddress: Address, quote: bigint) => void;
   clearTokens: () => void;
+  setTokens: (tokens: FlapTokenFeedItem[]) => void;
 }
 
 const DEFAULT_TP1: TakeProfitStep = {
@@ -158,6 +160,7 @@ export const useSniperStore = create<SniperState>((set) => ({
     takeProfitStep1: DEFAULT_TP1,
     takeProfitStep2: DEFAULT_TP2,
     autoSnipe: true,
+    rpcUrl: 'https://bsc-dataseed.binance.org/',
   },
 
   currentQuotes: new Map(),
@@ -219,4 +222,6 @@ export const useSniperStore = create<SniperState>((set) => ({
   }),
 
   clearTokens: () => set({ detectedTokens: [], recentToken: null }),
+
+  setTokens: (tokens) => set({ detectedTokens: tokens, recentToken: tokens[0] || null }),
 }));

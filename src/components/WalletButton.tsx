@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
 import { useSniperStore } from '@/store/sniper';
-import { initWalletClient, getAccountAddress, isWalletConnected } from '@/lib/flap/client';
+import { initWalletClient, getAccountAddress, isWalletConnected, AVAILABLE_RPC_URLS, setRpcUrl } from '@/lib/flap/client';
 import { getBnbBalance } from '@/lib/flap/trading';
 import { formatNumber } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Key, LogOut, AlertCircle } from 'lucide-react';
+import { Loader2, Key, LogOut, AlertCircle, Settings } from 'lucide-react';
 import { useEffect } from 'react';
 
 export function WalletButton() {
-  const { address, bnbBalance, isConnected, status, setAddress, setBnbBalance, setStatus } = useSniperStore();
+  const { address, bnbBalance, isConnected, status, config, setAddress, setBnbBalance, setStatus, setConfig } = useSniperStore();
   const [isConnecting, setIsConnecting] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [privateKey, setPrivateKey] = useState('');
+  const [rpcUrl, setRpcUrlState] = useState(config.rpcUrl);
   const [error, setError] = useState<string | null>(null);
 
   const handleImport = async () => {
@@ -27,7 +29,7 @@ export function WalletButton() {
     setStatus('connecting');
 
     try {
-      initWalletClient(privateKey.trim());
+      initWalletClient(privateKey.trim(), rpcUrl);
       const addr = getAccountAddress();
       if (!addr) {
         throw new Error('无效的私钥');
@@ -36,7 +38,6 @@ export function WalletButton() {
       setAddress(addr as `0x${string}`);
       setStatus('idle');
 
-      // Fetch BNB balance
       const balance = await getBnbBalance(addr);
       setBnbBalance(balance);
 
@@ -50,6 +51,12 @@ export function WalletButton() {
     }
   };
 
+  const handleSaveSettings = () => {
+    setRpcUrl(rpcUrl);
+    setConfig({ rpcUrl });
+    setShowSettingsModal(false);
+  };
+
   const handleDisconnect = () => {
     setAddress(null);
     setBnbBalance(0n);
@@ -61,12 +68,75 @@ export function WalletButton() {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
 
-  // Fetch balance when address changes
   useEffect(() => {
     if (address && isWalletConnected()) {
       getBnbBalance(address).then(setBnbBalance).catch(console.error);
     }
   }, [address]);
+
+  if (showSettingsModal) {
+    return (
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="bg-card border border-border rounded-xl p-6 w-full max-w-md space-y-4">
+          <div className="flex items-center gap-3">
+            <Settings className="h-6 w-6 text-neon-green" />
+            <h2 className="text-xl font-bold">节点设置</h2>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="rpc-url">RPC 节点地址</Label>
+            <Input
+              id="rpc-url"
+              type="text"
+              placeholder="https://bsc-dataseed.binance.org/"
+              value={rpcUrl}
+              onChange={(e) => setRpcUrlState(e.target.value)}
+              className="font-mono"
+            />
+            <p className="text-xs text-muted-foreground">
+              输入你的 BSC 节点地址，或选择下方预设节点
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>预设节点</Label>
+            <div className="space-y-2">
+              {AVAILABLE_RPC_URLS.map((url) => (
+                <button
+                  key={url}
+                  onClick={() => setRpcUrlState(url)}
+                  className={`w-full text-left px-3 py-2 rounded-lg font-mono text-sm transition-colors ${
+                    rpcUrl === url
+                      ? 'bg-neon-green/20 border border-neon-green text-neon-green'
+                      : 'bg-secondary hover:bg-secondary/80 text-muted-foreground'
+                  }`}
+                >
+                  {url}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <Button
+              variant="ghost"
+              className="flex-1"
+              onClick={() => setShowSettingsModal(false)}
+            >
+              取消
+            </Button>
+            <Button
+              variant="neon"
+              className="flex-1"
+              onClick={handleSaveSettings}
+            >
+              保存
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (showImportModal) {
     return (
@@ -90,6 +160,18 @@ export function WalletButton() {
             <p className="text-xs text-muted-foreground">
               警告：不要在不信任的网站上输入私钥。您的私钥仅存储在本地浏览器中。
             </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="rpc-url">RPC 节点</Label>
+            <Input
+              id="rpc-url"
+              type="text"
+              placeholder="https://bsc-dataseed.binance.org/"
+              value={rpcUrl}
+              onChange={(e) => setRpcUrlState(e.target.value)}
+              className="font-mono text-sm"
+            />
           </div>
 
           {error && (
@@ -143,15 +225,23 @@ export function WalletButton() {
 
   if (!isConnected || !address) {
     return (
-      <Button onClick={() => setShowImportModal(true)} variant="neon" className="gap-2">
-        <Key className="h-4 w-4" />
-        导入私钥
-      </Button>
+      <div className="flex gap-2">
+        <Button onClick={() => setShowSettingsModal(true)} variant="ghost" size="icon">
+          <Settings className="h-4 w-4" />
+        </Button>
+        <Button onClick={() => setShowImportModal(true)} variant="neon" className="gap-2">
+          <Key className="h-4 w-4" />
+          导入私钥
+        </Button>
+      </div>
     );
   }
 
   return (
     <div className="flex items-center gap-3">
+      <Button onClick={() => setShowSettingsModal(true)} variant="ghost" size="icon">
+        <Settings className="h-4 w-4" />
+      </Button>
       <div className="flex items-center gap-2 rounded-lg bg-secondary px-4 py-2">
         <div className="h-2 w-2 rounded-full bg-neon-green pulse-dot" />
         <span className="font-mono text-sm">{formatShortAddress(address)}</span>

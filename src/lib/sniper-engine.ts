@@ -1,34 +1,48 @@
 import { parseEther } from 'viem';
 import { useSniperStore } from '@/store/sniper';
 import { FlapTokenFeedItem } from './flap/types';
-import { startTokenFeedPolling, stopTokenFeedPolling, fetchTokenFeed } from './flap/indexer';
+import { startTokenFeedPolling, stopTokenFeedPolling } from './flap/indexer';
 import { quoteExactInput, buyToken, sellToken } from './flap/trading';
 import { createPosition, updatePosition, savePositions, loadPositions } from './flap/positions';
-import { isWalletConnected } from './flap/client';
+import { isWalletConnected, getAccountAddress, setRpcUrl } from './flap/client';
+import { getBnbBalance } from './flap/trading';
+
+// One hour in milliseconds
+const ONE_HOUR = 60 * 60 * 1000;
 
 class SniperEngine {
   private quotePollingIntervals: Map<string, number> = new Map();
   private isMonitoring = false;
+  private autoStartCallback: (() => void) | null = null;
 
   /**
-   * Start monitoring for new tokens
+   * Set callback for when auto-start is triggered (wallet already connected)
    */
-  async startMonitoring() {
-    if (this.isMonitoring) return;
+  onAutoStart(callback: () => void) {
+    this.autoStartCallback = callback;
+  }
 
-    if (!isWalletConnected()) {
-      useSniperStore.getState().setError('请先导入私钥');
-      return;
+  /**
+   * Check if monitoring should auto-start (wallet connected on page load)
+   */
+  async checkAutoStart() {
+    if (!isWalletConnected()) return;
+
+    // Restore balance
+    const address = getAccountAddress();
+    if (address) {
+      try {
+        const balance = await getBnbBalance(address);
+        useSniperStore.getState().setBnbBalance(balance);
+      } catch (e) {
+        console.error('Failed to fetch balance:', e);
+      }
     }
 
-    this.isMonitoring = true;
-    useSniperStore.getState().setStatus('monitoring');
-
-    // Load saved positions from localStorage
+    // Load saved positions
     const savedPositions = loadPositions();
     if (savedPositions.length > 0) {
       useSniperStore.getState().setPositions(savedPositions);
-      // Resume quote polling for open positions
       savedPositions.forEach(pos => {
         if (pos.status === 'open') {
           this.startQuotePolling(pos.tokenAddress);
@@ -36,10 +50,48 @@ class SniperEngine {
       });
     }
 
-    // Start token feed polling
-    startTokenFeedPolling((tokens) => {
-      this.handleNewTokens(tokens);
-    }, 10000);
+    // Trigger auto-start monitoring
+    if (this.autoStartCallback) {
+      this.autoStartCallback();
+    }
+
+    // Auto-start monitoring
+    await this.startMonitoring(true);
+  }
+
+  /**
+   * Start monitoring for new tokens
+   * @param isAutoStart - if true, this is an auto-start (no wallet check)
+   */
+  async startMonitoring(isAutoStart: boolean = false) {
+    if (this.isMonitoring) return;
+
+    if (!isAutoStart && !isWalletConnected()) {
+      useSniperStore.getState().setError('请先导入私钥');
+      return;
+    }
+
+    this.isMonitoring = true;
+    useSniperStore.getState().setStatus('monitoring');
+
+    // Load saved positions if not already loaded
+    const currentPositions = useSniperStore.getState().positions;
+    if (currentPositions.length === 0) {
+      const savedPositions = loadPositions();
+      if (savedPositions.length > 0) {
+        useSniperStore.getState().setPositions(savedPositions);
+        savedPositions.forEach(pos => {
+          if (pos.status === 'open') {
+            this.startQuotePolling(pos.tokenAddress);
+          }
+        });
+      }
+    }
+
+    // Start token feed polling with historical data
+    startTokenFeedPolling((tokens, isInitial) => {
+      this.handleNewTokens(tokens, isInitial);
+    }, 5000);
   }
 
   /**
@@ -51,34 +103,52 @@ class SniperEngine {
     this.isMonitoring = false;
     useSniperStore.getState().setStatus('idle');
 
-    // Stop all quote polling
     this.quotePollingIntervals.forEach((interval) => {
       clearInterval(interval);
     });
     this.quotePollingIntervals.clear();
 
-    // Stop token feed polling
     stopTokenFeedPolling();
   }
 
   /**
    * Handle new tokens from feed
    */
-  private async handleNewTokens(tokens: FlapTokenFeedItem[]) {
+  private async handleNewTokens(tokens: FlapTokenFeedItem[], isInitial: boolean) {
     const store = useSniperStore.getState();
     const { filters, config } = store;
 
-    // Update detected tokens
-    tokens.forEach(token => {
-      store.addToken(token);
+    const now = Date.now();
+    const oneHourAgo = now - ONE_HOUR;
+
+    // Filter to only tokens detected in the last hour
+    const recentTokens = tokens.filter(token => {
+      // Keep tokens from the last hour
+      if (token.detectedAt >= oneHourAgo) return true;
+      // Also keep tokens that are already in our list (persistence)
+      const existing = store.detectedTokens.find(t => t.address === token.address);
+      return existing !== undefined;
     });
 
-    // Auto snipe if enabled
-    if (config.autoSnipe && filters.enabled) {
-      for (const token of tokens) {
+    // If initial load, set all historical tokens
+    if (isInitial && recentTokens.length > 0) {
+      store.setTokens(recentTokens);
+    } else {
+      // Add new tokens (not duplicates)
+      recentTokens.forEach(token => {
+        const exists = store.detectedTokens.some(t => t.address === token.address);
+        if (!exists) {
+          store.addToken(token);
+        }
+      });
+    }
+
+    // Auto snipe if enabled and not initial load
+    if (!isInitial && config.autoSnipe && filters.enabled) {
+      for (const token of recentTokens) {
         if (this.evaluateFilters(token)) {
           await this.executeBuy(token);
-          break; // Only buy one at a time
+          break;
         }
       }
     }
@@ -115,7 +185,6 @@ class SniperEngine {
 
     const bnbAmount = parseEther(config.buyAmount.toString());
 
-    // Create pending transaction
     const pendingTx = {
       hash: '',
       side: 'buy' as const,
@@ -131,24 +200,20 @@ class SniperEngine {
 
     store.addTransaction(pendingTx);
 
-    // Execute buy
     const result = await buyToken(token.address, bnbAmount, config.slippage);
 
     if (result.success && result.txHash) {
-      // Get actual token amount from quote
       const quote = await quoteExactInput(token.address, '0x0000000000000000000000000000000000000000', bnbAmount);
 
-      // Update transaction
       store.updateTransaction(result.txHash, {
         status: 'success',
         tokenAmount: quote,
         price: bnbAmount / quote,
       });
 
-      // Create position
       const position = createPosition(
         token,
-        bnbAmount / quote, // entry price
+        bnbAmount / quote,
         bnbAmount,
         quote,
         config.stopLossPercent,
@@ -158,7 +223,6 @@ class SniperEngine {
       store.addPosition(position);
       savePositions([...store.positions]);
 
-      // Start quote polling for this position
       this.startQuotePolling(token.address);
     } else {
       store.updateTransaction(result.txHash || '', {
@@ -170,9 +234,6 @@ class SniperEngine {
     store.setStatus('monitoring');
   }
 
-  /**
-   * Start polling quote for a position
-   */
   private startQuotePolling(tokenAddress: string) {
     if (this.quotePollingIntervals.has(tokenAddress)) return;
 
@@ -183,9 +244,6 @@ class SniperEngine {
     this.quotePollingIntervals.set(tokenAddress, interval);
   }
 
-  /**
-   * Stop polling quote for a position
-   */
   private stopQuotePolling(tokenAddress: string) {
     const interval = this.quotePollingIntervals.get(tokenAddress);
     if (interval) {
@@ -194,9 +252,6 @@ class SniperEngine {
     }
   }
 
-  /**
-   * Check position for take profit / stop loss
-   */
   private async checkPosition(tokenAddress: string) {
     const store = useSniperStore.getState();
     const { positions, config } = store;
@@ -208,7 +263,6 @@ class SniperEngine {
     }
 
     try {
-      // Get current quote
       const currentQuote = await quoteExactInput(
         tokenAddress,
         '0x0000000000000000000000000000000000000000',
@@ -217,20 +271,17 @@ class SniperEngine {
 
       store.setCurrentQuote(tokenAddress, currentQuote);
 
-      // Calculate current price vs entry price
       const currentPrice = currentQuote > 0n ? position.entryQuoteAmount * position.remainingAmount / currentQuote : 0n;
       const priceChange = position.entryPrice > 0n
         ? ((currentPrice - position.entryPrice) * 100n) / position.entryPrice
         : 0n;
       const profitPercent = Number(priceChange);
 
-      // Check stop loss
       if (profitPercent <= -config.stopLossPercent) {
         await this.executeSell(position, 'stop_loss');
         return;
       }
 
-      // Check take profit steps
       for (const step of position.takeProfitSteps) {
         if (!step.executed && profitPercent >= step.profitPercent) {
           await this.executeSell(position, 'take_profit', step.sellPercent, step.id);
@@ -242,9 +293,6 @@ class SniperEngine {
     }
   }
 
-  /**
-   * Execute sell for a position
-   */
   private async executeSell(
     position: ReturnType<typeof useSniperStore.getState>['positions'][0],
     triggeredBy: 'take_profit' | 'stop_loss',
@@ -258,7 +306,6 @@ class SniperEngine {
       ? (position.remainingAmount * BigInt(sellPercent)) / 100n
       : position.remainingAmount;
 
-    // Create pending transaction
     const pendingTx = {
       hash: '',
       side: 'sell' as const,
@@ -276,7 +323,6 @@ class SniperEngine {
 
     store.addTransaction(pendingTx);
 
-    // Execute sell
     const result = await sellToken(position.tokenAddress, sellAmount, config.slippage);
 
     if (result.success && result.txHash) {
@@ -292,23 +338,19 @@ class SniperEngine {
         price: sellAmount > 0n ? quote * position.entryTokenAmount / sellAmount : 0n,
       });
 
-      // Update position
       const newRemaining = position.remainingAmount - sellAmount;
 
       if (newRemaining <= 0n || triggeredBy === 'stop_loss') {
-        // Close position
         store.updatePosition(position.id, {
           remainingAmount: 0n,
           status: 'closed',
         });
         this.stopQuotePolling(position.tokenAddress);
       } else {
-        // Update remaining amount
         store.updatePosition(position.id, {
           remainingAmount: newRemaining,
         });
 
-        // Mark take profit step as executed
         if (stepId) {
           const updatedPositions = store.positions.map(p => {
             if (p.id === position.id) {
@@ -335,5 +377,4 @@ class SniperEngine {
   }
 }
 
-// Singleton instance
 export const sniperEngine = new SniperEngine();
