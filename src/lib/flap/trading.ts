@@ -20,9 +20,11 @@ export async function quoteExactInput(
   });
 
   const result = await contract.read.quoteExactInput([
-    inputToken,
-    outputToken,
-    inputAmount,
+    {
+      inputToken: inputToken as `0x${string}`,
+      outputToken: outputToken as `0x${string}`,
+      inputAmount,
+    },
   ]) as bigint;
 
   return result;
@@ -53,12 +55,18 @@ export async function swapExactInput(
       address: FLAP_PORTAL_ADDRESS as `0x${string}`,
       abi: FLAP_PORTAL_ABI,
       functionName: 'swapExactInput',
-      args: [inputToken, outputToken, inputAmount, minOutputAmount, permitData as `0x${string}`],
+      args: [{
+        inputToken: inputToken as `0x${string}`,
+        outputToken: outputToken as `0x${string}`,
+        inputAmount,
+        minOutputAmount,
+        permitData: permitData as `0x${string}`,
+      }],
       value: inputToken === NATIVE_TOKEN_SENTINEL ? inputAmount : 0n,
     });
 
     // Wait for transaction receipt
-    const receipt = await publicClient.waitForTransactionReceipt({ hash });
+    const receipt = await getPublicClient().waitForTransactionReceipt({ hash });
 
     if (receipt.status === 'success') {
       return { success: true, txHash: hash };
