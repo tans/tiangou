@@ -60,13 +60,27 @@ class SniperEngine {
   }
 
   /**
-   * Start monitoring for new tokens
-   * @param isAutoStart - if true, this is an auto-start (no wallet check)
+   * Start monitoring without requiring wallet (for public token feed viewing)
    */
-  async startMonitoring(isAutoStart: boolean = false) {
+  async startMonitoringWithoutWallet() {
     if (this.isMonitoring) return;
 
-    if (!isAutoStart && !isWalletConnected()) {
+    this.isMonitoring = true;
+    useSniperStore.getState().setStatus('monitoring');
+
+    // Start token feed polling with historical data
+    startTokenFeedPolling((tokens, isInitial) => {
+      this.handleNewTokens(tokens, isInitial);
+    }, 5000);
+  }
+
+  /**
+   * Start monitoring for new tokens (requires wallet for trading)
+   */
+  async startMonitoring() {
+    if (this.isMonitoring) return;
+
+    if (!isWalletConnected()) {
       useSniperStore.getState().setError('请先导入私钥');
       return;
     }
@@ -143,8 +157,8 @@ class SniperEngine {
       });
     }
 
-    // Auto snipe if enabled and not initial load
-    if (!isInitial && config.autoSnipe && filters.enabled) {
+    // Auto snipe if enabled, not initial load, and wallet is connected
+    if (!isInitial && config.autoSnipe && filters.enabled && isWalletConnected()) {
       for (const token of recentTokens) {
         if (this.evaluateFilters(token)) {
           await this.executeBuy(token);

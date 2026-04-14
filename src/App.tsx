@@ -4,8 +4,8 @@ import { sniperEngine } from './lib/sniper-engine';
 
 export default function App() {
   useEffect(() => {
-    // Check if wallet was previously connected and auto-start monitoring
-    sniperEngine.checkAutoStart();
+    // Auto-start monitoring on page load (no wallet required)
+    sniperEngine.startMonitoringWithoutWallet();
   }, []);
 
   return <Dashboard />;
