@@ -1,0 +1,12 @@
+import type { Address } from 'viem';
+
+export const BNB_MAINNET_CHAIN_ID = 56;
+export const BNB_TESTNET_CHAIN_ID = 97;
+
+export const NATIVE_TOKEN_SENTINEL =
+  '0x0000000000000000000000000000000000000000' as Address;
+
+export const FLAP_PORTAL_ADDRESSES: Record<number, Address> = {
+  [BNB_MAINNET_CHAIN_ID]: '0xe2cE6ab80874Fa9Fa2aAE65D277Dd6B8e65C9De0',
+  [BNB_TESTNET_CHAIN_ID]: '0x5bEacaF7ABCbB3aB280e80D007FD31fcE26510e9',
+};
