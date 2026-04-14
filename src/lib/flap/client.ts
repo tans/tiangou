@@ -3,8 +3,9 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { bsc } from 'viem/chains';
 import { FLAP_PORTAL_ADDRESSES, BNB_MAINNET_CHAIN_ID, NATIVE_TOKEN_SENTINEL } from './constants';
 
-// Default RPC endpoints
+// Default RPC endpoints (in priority order)
 const DEFAULT_RPC_URLS = [
+  'https://bsc-rpc.publicnode.com',
   'https://bsc-dataseed.binance.org/',
   'https://bsc-dataseed1.binance.org/',
   'https://bsc-dataseed2.binance.org/',
