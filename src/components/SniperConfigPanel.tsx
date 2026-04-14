@@ -1,25 +1,14 @@
 import React from 'react';
 import { useSniperStore } from '@/store/sniper';
-import { sniperEngine } from '@/lib/sniper-engine';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Crosshair, Zap, Play, Square, ShieldAlert, Target } from 'lucide-react';
-import { formatNumber } from '@/lib/utils';
+import { Crosshair, ShieldAlert, Target, Zap } from 'lucide-react';
 
 export function SniperConfigPanel() {
-  const { config, status, setConfig } = useSniperStore();
-
-  const handleStartMonitoring = () => {
-    sniperEngine.startMonitoring();
-  };
-
-  const handleStopMonitoring = () => {
-    sniperEngine.stopMonitoring();
-  };
+  const { config, setConfig } = useSniperStore();
 
   return (
     <Card className="border-border/50">
@@ -28,7 +17,7 @@ export function SniperConfigPanel() {
           <Crosshair className="h-5 w-5 text-neon-green" />
           狙击配置
         </CardTitle>
-        <CardDescription>配置买入参数</CardDescription>
+        <CardDescription>导入私钥后可自动狙击</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Buy Amount */}
@@ -167,25 +156,6 @@ export function SniperConfigPanel() {
             onCheckedChange={(checked) => setConfig({ autoSnipe: checked })}
           />
         </div>
-
-        {/* Start/Stop Button */}
-        <Button
-          onClick={status === 'monitoring' ? handleStopMonitoring : handleStartMonitoring}
-          variant={status === 'monitoring' ? 'destructive' : 'neon'}
-          className="w-full gap-2"
-        >
-          {status === 'monitoring' ? (
-            <>
-              <Square className="h-4 w-4" />
-              停止监控
-            </>
-          ) : (
-            <>
-              <Play className="h-4 w-4" />
-              开始监控
-            </>
-          )}
-        </Button>
       </CardContent>
     </Card>
   );
