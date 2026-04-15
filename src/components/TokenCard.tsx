@@ -54,6 +54,17 @@ export function TokenCard({ token, isRecent }: TokenCardProps) {
                 税币
               </Badge>
             )}
+            {token.isTaxToken && (token.buyTax !== undefined || token.sellTax !== undefined) && (
+              <button
+                onClick={() => setShowTaxDetails(!showTaxDetails)}
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-neon-green transition-colors"
+              >
+                <span className="font-mono">
+                  税:{formatTaxPercent(token.buyTax)}/{formatTaxPercent(token.sellTax)}
+                </span>
+                <ChevronDown className={cn("h-3 w-3 transition-transform", showTaxDetails && "rotate-180")} />
+              </button>
+            )}
             {passesFilters ? (
               <CheckCircle className="h-5 w-5 text-neon-green" />
             ) : (
@@ -69,6 +80,33 @@ export function TokenCard({ token, isRecent }: TokenCardProps) {
             <span className="text-neon-red">不可交易</span>
           )}
         </div>
+
+        {showTaxDetails && hasTaxDistribution && (
+          <div className="mt-3 pt-3 border-t border-border/50">
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="flex items-center gap-2">
+                <Flame className="h-3 w-3 text-orange-500" />
+                <span className="text-muted-foreground">销毁</span>
+                <span className="ml-auto font-mono text-neon-green">{formatTaxPercent(token.taxBurn)}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Users className="h-3 w-3 text-blue-500" />
+                <span className="text-muted-foreground">分红</span>
+                <span className="ml-auto font-mono text-neon-green">{formatTaxPercent(token.taxDividend)}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Plus className="h-3 w-3 text-purple-500" />
+                <span className="text-muted-foreground">加池</span>
+                <span className="ml-auto font-mono text-neon-green">{formatTaxPercent(token.taxAddPool)}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Wallet className="h-3 w-3 text-yellow-500" />
+                <span className="text-muted-foreground">税收金库</span>
+                <span className="ml-auto font-mono text-neon-green">{formatTaxPercent(token.taxTreasury)}</span>
+              </div>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
