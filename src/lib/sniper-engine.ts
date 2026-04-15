@@ -358,9 +358,49 @@ class SniperEngine {
 
     store.addTransaction(pendingTx);
 
-    const result = await sellToken(position.tokenAddress, sellAmount, config.slippage);
+    // Determine which venue to use for selling
+    let result: { success: boolean; outputAmount?: bigint; txHash?: string; error?: string };
+    let venue: 'flap' | 'pancake' = 'flap';
+
+    if (config.externalSellEnabled) {
+      try {
+        // Compare quotes from both venues
+        const quotes = await compareSellQuotes(position.tokenAddress, sellAmount);
+        venue = quotes.betterVenue;
+
+        console.log(`[Sniper] Sell quotes comparison for ${position.symbol}:`, {
+          flap: `${quotes.flap.priceInBnb} BNB`,
+          pancake: `${quotes.pancake.priceInBnb} BNB`,
+          chosen: venue,
+        });
+
+        if (venue === 'pancake') {
+          // Get PancakeSwap quote for the actual output
+          const pancakeQuote = await quotePancakeSwapOutput(position.tokenAddress, sellAmount);
+          const slippageMultiplier = BigInt(100 - config.slippage);
+          const minOutput = (pancakeQuote * slippageMultiplier) / 100n;
+
+          result = await sellTokenOnPancake(
+            position.tokenAddress,
+            sellAmount,
+            minOutput,
+            config.slippage
+          );
+        } else {
+          result = await sellToken(position.tokenAddress, sellAmount, config.slippage);
+        }
+      } catch (error) {
+        console.error('[Sniper] External sell comparison failed, falling back to Flap:', error);
+        result = await sellToken(position.tokenAddress, sellAmount, config.slippage);
+        venue = 'flap';
+      }
+    } else {
+      // Use internal Flap Portal exclusively
+      result = await sellToken(position.tokenAddress, sellAmount, config.slippage);
+    }
 
     if (result.success && result.txHash) {
+      // Get the actual quote from the successful transaction
       const quote = await quoteExactInput(
         position.tokenAddress,
         '0x0000000000000000000000000000000000000000',

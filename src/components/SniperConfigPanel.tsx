@@ -6,7 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Crosshair, ShieldAlert, Target, Zap, Plus, Trash2 } from 'lucide-react';
+import { Crosshair, ShieldAlert, Target, Zap, Plus, Trash2, ExternalLink } from 'lucide-react';
 
 const STEP_COLORS = [
   'text-neon-green',
@@ -184,6 +184,46 @@ export function SniperConfigPanel() {
             checked={config.autoSnipe}
             onCheckedChange={(checked) => setConfig({ autoSnipe: checked })}
           />
+        </div>
+
+        {/* External DEX Sell */}
+        <div className="pt-4 border-t border-border/50 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ExternalLink className="h-4 w-4 text-neon-blue" />
+              <Label htmlFor="external-sell">外盘卖出 (PancakeSwap)</Label>
+            </div>
+            <Switch
+              id="external-sell"
+              checked={config.externalSellEnabled}
+              onCheckedChange={(checked) => setConfig({ externalSellEnabled: checked })}
+            />
+          </div>
+
+          <p className="text-xs text-muted-foreground">
+            启用后，卖出时会自动比较内盘和外盘价格，选择更优的交易所卖出
+          </p>
+
+          {config.externalSellEnabled && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="external-sell-min-cap" className="text-sm">
+                  最低市值触发 (USD)
+                </Label>
+              </div>
+              <Input
+                id="external-sell-min-cap"
+                type="number"
+                value={config.externalSellMinMarketCap ?? ''}
+                onChange={(e) => setConfig({ externalSellMinMarketCap: Number(e.target.value) || undefined })}
+                className="font-mono"
+                placeholder="100000"
+              />
+              <p className="text-xs text-muted-foreground">
+                只有市值超过此值的代币才会考虑在外盘卖出
+              </p>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
