@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
-import { Flame, Tag, TrendingUp, Layers } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Flame, Tag, TrendingUp, Layers, DollarSign, MessageCircle, Percent } from 'lucide-react';
 
 const VERSIONS = ['v1', 'v2', 'v3', 'v4', 'v5'];
 
@@ -116,6 +117,56 @@ export function FilterPanel() {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Max Tax Rate */}
+          <div className="py-4 border-b border-border/50">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Percent className="h-4 w-4 text-muted-foreground" />
+                <Label>最高税率 (≥5.25%不买)</Label>
+              </div>
+              <span className="font-mono text-neon-green">{filters.maxTaxRate}%</span>
+            </div>
+            <Slider
+              value={[filters.maxTaxRate]}
+              onValueChange={([value]) => setFilters({ maxTaxRate: value })}
+              min={0}
+              max={20}
+              step={0.25}
+              className="w-full"
+            />
+          </div>
+
+          {/* Max Market Cap */}
+          <div className="py-4 border-b border-border/50">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <Label htmlFor="max-market-cap">最大市值 (USD)</Label>
+              </div>
+              <Input
+                id="max-market-cap"
+                type="number"
+                value={filters.maxMarketCap ?? ''}
+                onChange={(e) => setFilters({ maxMarketCap: Number(e.target.value) || undefined })}
+                className="w-28 h-8 text-right font-mono text-sm"
+                placeholder="50k"
+              />
+            </div>
+          </div>
+
+          {/* Require TG Group */}
+          <div className="flex items-center justify-between py-3">
+            <div className="flex items-center gap-2">
+              <MessageCircle className="h-4 w-4 text-muted-foreground" />
+              <Label htmlFor="require-tg">必须有TG群</Label>
+            </div>
+            <Switch
+              id="require-tg"
+              checked={filters.requireTgGroup}
+              onCheckedChange={(checked) => setFilters({ requireTgGroup: checked })}
+            />
           </div>
         </div>
       </CardContent>

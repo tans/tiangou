@@ -59,6 +59,13 @@ export interface FilterConfig {
   allowedVersions: string[];    // ['v1', 'v2', 'v3', 'v4', 'v5']
   quoteToken: Address | null;   // null = any, or specific token
   maxObservedTaxRate?: number; // max tax percentage observed
+  // Market cap filters (in USD)
+  maxMarketCap?: number;
+  minMarketCap?: number;
+  // TG group requirement
+  requireTgGroup: boolean;
+  // Tax rate filter (> 5.25% = no buy per issue requirement)
+  maxTaxRate: number;
 }
 
 // Sniper Config
@@ -166,6 +173,10 @@ export const useSniperStore = create<SniperState>((set) => ({
     allowedVersions: ['v1', 'v2', 'v3', 'v4', 'v5'],
     quoteToken: null,
     maxObservedTaxRate: 50,
+    maxMarketCap: 50000, // $50k max market cap
+    minMarketCap: 0,
+    requireTgGroup: false, // default off until TG detection is implemented
+    maxTaxRate: 5.25, // issue requirement: > 5.25% tax = no buy
   },
 
   config: {

@@ -116,6 +116,13 @@ function deriveCreatedTokens(events: PortalStreamEvent[]): FlapTokenFeedItem[] {
       if (event.type === 'FlapTokenTaxSet' && created.has(event.token)) {
         const token = created.get(event.token)!;
         token.isTaxToken = (event.details.tax as bigint | undefined ?? 0n) > 0n;
+        // For symmetric tax, both buy and sell tax are the same
+        if (token.buyTax === undefined) {
+          token.buyTax = event.details.tax as bigint | undefined;
+        }
+        if (token.sellTax === undefined) {
+          token.sellTax = event.details.tax as bigint | undefined;
+        }
       }
 
       if (event.type === 'FlapTokenAsymmetricTaxSet' && created.has(event.token)) {
@@ -123,6 +130,8 @@ function deriveCreatedTokens(events: PortalStreamEvent[]): FlapTokenFeedItem[] {
         token.isTaxToken =
           (event.details.buyTax as bigint | undefined ?? 0n) > 0n ||
           (event.details.sellTax as bigint | undefined ?? 0n) > 0n;
+        token.buyTax = event.details.buyTax as bigint | undefined;
+        token.sellTax = event.details.sellTax as bigint | undefined;
       }
 
       if (event.type === 'TokenQuoteSet' && created.has(event.token)) {

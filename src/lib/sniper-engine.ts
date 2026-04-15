@@ -180,6 +180,26 @@ class SniperEngine {
     if (!filters.allowedVersions.includes(token.version)) return false;
     if (!token.tradable) return false;
 
+    // Tax rate filter: > 5.25% tax = no buy (issue requirement)
+    // Tax is stored in basis points (e.g., 525 = 5.25%)
+    if (token.buyTax !== undefined) {
+      const buyTaxPercent = Number(token.buyTax) / 100; // convert from basis points
+      if (buyTaxPercent > filters.maxTaxRate) return false;
+    }
+    if (token.sellTax !== undefined) {
+      const sellTaxPercent = Number(token.sellTax) / 100;
+      if (sellTaxPercent > filters.maxTaxRate) return false;
+    }
+
+    // TG group filter
+    if (filters.requireTgGroup && !token.hasTgGroup) return false;
+
+    // Market cap filter
+    if (token.marketCap !== undefined) {
+      if (filters.minMarketCap !== undefined && token.marketCap < filters.minMarketCap) return false;
+      if (filters.maxMarketCap !== undefined && token.marketCap > filters.maxMarketCap) return false;
+    }
+
     return true;
   }
 

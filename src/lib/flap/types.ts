@@ -10,6 +10,13 @@ export interface FlapTokenFeedItem {
   progress: number;
   detectedAt: number;
   tradable: boolean;
+  // Market cap in USD (estimated)
+  marketCap?: number;
+  // Whether token has Telegram group
+  hasTgGroup?: boolean;
+  // Tax details
+  buyTax?: bigint;
+  sellTax?: bigint;
 }
 
 export type PortalEventType =
