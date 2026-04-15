@@ -11,8 +11,9 @@ import type { FlapTokenFeedItem, LiveTokenQuote, PortalStreamEvent, PortalTokenM
 const FLAP_PORTAL_ADDRESS = FLAP_PORTAL_ADDRESSES[BNB_MAINNET_CHAIN_ID];
 const ONE_HOUR = 60 * 60 * 1000;
 const BLOCK_TIME = 3;
-const BLOCKS_PER_HOUR = Math.floor(ONE_HOUR / 1000 / BLOCK_TIME);
-const CHUNK_SIZE = 500n;
+// Reduced from 1200 to 200 blocks (~10 minutes) to improve polling speed
+const BLOCKS_PER_HOUR = 200;
+const CHUNK_SIZE = 200n;
 const PRICE_INPUT_AMOUNT = parseEther('0.01');
 const PRICE_INPUT_BNB = 0.01;
 
