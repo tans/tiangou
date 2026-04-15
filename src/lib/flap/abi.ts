@@ -97,7 +97,7 @@ export const FLAP_PORTAL_ABI = [
   {
     type: 'function',
     name: 'quoteExactInput',
-    stateMutability: 'nonpayable',
+    stateMutability: 'view',
     inputs: [
       {
         name: 'params',
