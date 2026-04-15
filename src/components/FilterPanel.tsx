@@ -1,6 +1,6 @@
 import React from 'react';
 import { useSniperStore } from '@/store/sniper';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
@@ -27,7 +27,8 @@ export function FilterPanel() {
           </svg>
           过滤器
         </CardTitle>
-              </CardHeader>
+        <CardDescription>配置代币筛选规则</CardDescription>
+      </CardHeader>
       <CardContent className="space-y-6">
         {/* Master Switch */}
         <div className="flex items-center justify-between">

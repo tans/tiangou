@@ -24,6 +24,7 @@ export function Dashboard() {
             </div>
             <div className="min-w-0">
               <h1 className="truncate text-base font-semibold tracking-tight">Flap Portal 控制台</h1>
+              <p className="text-[11px] text-muted-foreground">全事件流 + 最新 20 币价</p>
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-3">
