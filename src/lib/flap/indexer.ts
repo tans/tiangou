@@ -56,6 +56,7 @@ function createFeedToken(meta: PortalTokenMeta): FlapTokenFeedItem {
     progress: 0,
     detectedAt: meta.detectedAt,
     tradable: true,
+    hasTgGroup: !!meta.tgGroup,
   };
 }
 
@@ -67,6 +68,27 @@ function toEventTime(ts: unknown): number {
   return Date.now();
 }
 
+function parseTokenMeta(metaStr: string | undefined): { tgGroup?: string } {
+  if (!metaStr) return {};
+  try {
+    const meta = JSON.parse(metaStr);
+    // Check for tg/telegram field in meta
+    if (meta.tg || meta.telegram || meta.tgGroup) {
+      return { tgGroup: meta.tg || meta.telegram || meta.tgGroup };
+    }
+    // Check socials object
+    if (meta.socials?.telegram) {
+      return { tgGroup: meta.socials.telegram };
+    }
+    if (meta.socials?.tg) {
+      return { tgGroup: meta.socials.tg };
+    }
+    return {};
+  } catch {
+    return {};
+  }
+}
+
 function normalizeEvent(eventName: typeof FLAP_PORTAL_EVENTS[number]['name'], log: any): PortalStreamEvent {
   const args = log.args as Record<string, unknown>;
   const token = (args.token ?? '0x0000000000000000000000000000000000000000') as Address;
@@ -75,11 +97,14 @@ function normalizeEvent(eventName: typeof FLAP_PORTAL_EVENTS[number]['name'], lo
   const name = (args.name as string | undefined) || cachedMeta?.name;
 
   if (eventName === 'TokenCreated') {
+    const metaStr = args.meta as string | undefined;
+    const { tgGroup } = parseTokenMeta(metaStr);
     tokenMetaCache.set(token, {
       address: token,
       symbol: (args.symbol as string) || '???',
       name: (args.name as string) || 'Unknown',
       detectedAt: Number(args.ts ?? 0n) * 1000,
+      tgGroup,
     });
   }
 

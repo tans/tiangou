@@ -44,6 +44,7 @@ export interface PortalTokenMeta {
   symbol: string;
   name: string;
   detectedAt: number;
+  tgGroup?: string;
 }
 
 export interface PortalStreamEvent {
