@@ -1,14 +1,48 @@
 import React from 'react';
-import { useSniperStore } from '@/store/sniper';
+import { useSniperStore, TakeProfitStep } from '@/store/sniper';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
-import { Crosshair, ShieldAlert, Target, Zap } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Crosshair, ShieldAlert, Target, Zap, Plus, Trash2 } from 'lucide-react';
+
+const STEP_COLORS = [
+  'text-neon-green',
+  'text-neon-blue',
+  'text-neon-yellow',
+  'text-neon-red',
+  'text-neon-purple',
+];
 
 export function SniperConfigPanel() {
   const { config, setConfig } = useSniperStore();
+
+  const updateTakeProfitStep = (index: number, updates: Partial<TakeProfitStep>) => {
+    const newSteps = [...config.takeProfitSteps];
+    newSteps[index] = { ...newSteps[index], ...updates };
+    setConfig({ takeProfitSteps: newSteps });
+  };
+
+  const addTakeProfitStep = () => {
+    if (config.takeProfitSteps.length >= 5) return;
+    const newId = `tp${config.takeProfitSteps.length + 1}`;
+    const lastStep = config.takeProfitSteps[config.takeProfitSteps.length - 1];
+    const newStep: TakeProfitStep = {
+      id: newId,
+      profitPercent: lastStep ? lastStep.profitPercent + 50 : 100,
+      sellPercent: lastStep ? lastStep.sellPercent : 30,
+      executed: false,
+    };
+    setConfig({ takeProfitSteps: [...config.takeProfitSteps, newStep] });
+  };
+
+  const removeTakeProfitStep = (index: number) => {
+    if (config.takeProfitSteps.length <= 1) return;
+    const newSteps = config.takeProfitSteps.filter((_, i) => i !== index);
+    setConfig({ takeProfitSteps: newSteps });
+  };
 
   return (
     <Card className="border-border/50">
@@ -72,76 +106,71 @@ export function SniperConfigPanel() {
           />
         </div>
 
-        {/* Take Profit Step 1 */}
-        <div className="p-3 rounded-lg bg-secondary/50 space-y-3">
-          <div className="flex items-center gap-2">
-            <Target className="h-4 w-4 text-neon-green" />
-            <Label className="text-sm">止盈 1</Label>
+        {/* Take Profit Steps */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Target className="h-4 w-4 text-neon-green" />
+              <Label>止盈策略</Label>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={addTakeProfitStep}
+              disabled={config.takeProfitSteps.length >= 5}
+              className="h-7 px-2 text-xs"
+            >
+              <Plus className="h-3 w-3 mr-1" />
+              添加
+            </Button>
           </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">利润达到</span>
-            <span className="font-mono text-neon-green">{config.takeProfitStep1.profitPercent}%</span>
-          </div>
-          <Slider
-            value={[config.takeProfitStep1.profitPercent]}
-            onValueChange={([value]) => setConfig({
-              takeProfitStep1: { ...config.takeProfitStep1, profitPercent: value }
-            })}
-            min={10}
-            max={200}
-            step={5}
-            className="w-full"
-          />
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">卖出仓位</span>
-            <span className="font-mono text-neon-blue">{config.takeProfitStep1.sellPercent}%</span>
-          </div>
-          <Slider
-            value={[config.takeProfitStep1.sellPercent]}
-            onValueChange={([value]) => setConfig({
-              takeProfitStep1: { ...config.takeProfitStep1, sellPercent: value }
-            })}
-            min={10}
-            max={100}
-            step={5}
-            className="w-full"
-          />
-        </div>
 
-        {/* Take Profit Step 2 */}
-        <div className="p-3 rounded-lg bg-secondary/50 space-y-3">
-          <div className="flex items-center gap-2">
-            <Target className="h-4 w-4 text-neon-blue" />
-            <Label className="text-sm">止盈 2</Label>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">利润达到</span>
-            <span className="font-mono text-neon-green">{config.takeProfitStep2.profitPercent}%</span>
-          </div>
-          <Slider
-            value={[config.takeProfitStep2.profitPercent]}
-            onValueChange={([value]) => setConfig({
-              takeProfitStep2: { ...config.takeProfitStep2, profitPercent: value }
-            })}
-            min={50}
-            max={500}
-            step={10}
-            className="w-full"
-          />
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">卖出仓位</span>
-            <span className="font-mono text-neon-blue">{config.takeProfitStep2.sellPercent}%</span>
-          </div>
-          <Slider
-            value={[config.takeProfitStep2.sellPercent]}
-            onValueChange={([value]) => setConfig({
-              takeProfitStep2: { ...config.takeProfitStep2, sellPercent: value }
-            })}
-            min={10}
-            max={100}
-            step={5}
-            className="w-full"
-          />
+          {config.takeProfitSteps.map((step, index) => (
+            <div key={step.id} className="p-3 rounded-lg bg-secondary/50 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Target className={`h-4 w-4 ${STEP_COLORS[index % STEP_COLORS.length]}`} />
+                  <Label className="text-sm">止盈 {index + 1}</Label>
+                </div>
+                {config.takeProfitSteps.length > 1 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeTakeProfitStep(index)}
+                    className="h-6 w-6 p-0 text-muted-foreground hover:text-neon-red"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                )}
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">利润达到</span>
+                <span className={`font-mono ${STEP_COLORS[index % STEP_COLORS.length]}`}>
+                  {step.profitPercent}%
+                </span>
+              </div>
+              <Slider
+                value={[step.profitPercent]}
+                onValueChange={([value]) => updateTakeProfitStep(index, { profitPercent: value })}
+                min={10}
+                max={500}
+                step={5}
+                className="w-full"
+              />
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">卖出仓位</span>
+                <span className="font-mono text-neon-blue">{step.sellPercent}%</span>
+              </div>
+              <Slider
+                value={[step.sellPercent]}
+                onValueChange={([value]) => updateTakeProfitStep(index, { sellPercent: value })}
+                min={5}
+                max={100}
+                step={5}
+                className="w-full"
+              />
+            </div>
+          ))}
         </div>
 
         {/* Auto Snipe */}

@@ -251,7 +251,7 @@ class SniperEngine {
         bnbAmount,
         quote,
         config.stopLossPercent,
-        [config.takeProfitStep1, config.takeProfitStep2]
+        config.takeProfitSteps
       );
 
       store.addPosition(position);

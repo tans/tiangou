@@ -17,6 +17,11 @@ export interface FlapTokenFeedItem {
   // Tax details
   buyTax?: bigint;
   sellTax?: bigint;
+  // Tax distribution breakdown (percentages as basis points, e.g., 500 = 5%)
+  taxBurn?: number;
+  taxDividend?: number;
+  taxAddPool?: number;
+  taxTreasury?: number;
 }
 
 export type PortalEventType =

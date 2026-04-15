@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { type FlapTokenFeedItem } from '@/lib/flap/types';
 import { formatAddress, formatTimestamp } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, XCircle, Tag, TrendingUp } from 'lucide-react';
+import { CheckCircle, XCircle, Tag, TrendingUp, ChevronDown, Flame, Users, Plus, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface TokenCardProps {
@@ -11,8 +11,15 @@ interface TokenCardProps {
   isRecent?: boolean;
 }
 
+function formatTaxPercent(bps: number | undefined): string {
+  if (bps === undefined) return '-';
+  return `${(bps / 100).toFixed(1)}%`;
+}
+
 export function TokenCard({ token, isRecent }: TokenCardProps) {
+  const [showTaxDetails, setShowTaxDetails] = useState(false);
   const passesFilters = token.tradable;
+  const hasTaxDistribution = token.taxBurn !== undefined || token.taxDividend !== undefined || token.taxAddPool !== undefined || token.taxTreasury !== undefined;
 
   return (
     <Card className={cn(

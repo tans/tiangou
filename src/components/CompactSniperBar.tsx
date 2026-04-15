@@ -71,39 +71,55 @@ export function CompactSniperBar() {
         />
         <NumberField
           label="TP1 利润%"
-          value={config.takeProfitStep1.profitPercent}
+          value={config.takeProfitSteps[0]?.profitPercent ?? 50}
           step="5"
           min="0"
-          onChange={(profitPercent) => setConfig({
-            takeProfitStep1: { ...config.takeProfitStep1, profitPercent },
-          })}
+          onChange={(profitPercent) => {
+            if (config.takeProfitSteps[0]) {
+              const newSteps = [...config.takeProfitSteps];
+              newSteps[0] = { ...newSteps[0], profitPercent };
+              setConfig({ takeProfitSteps: newSteps });
+            }
+          }}
         />
         <NumberField
           label="TP1 卖出%"
-          value={config.takeProfitStep1.sellPercent}
+          value={config.takeProfitSteps[0]?.sellPercent ?? 30}
           step="5"
           min="0"
-          onChange={(sellPercent) => setConfig({
-            takeProfitStep1: { ...config.takeProfitStep1, sellPercent },
-          })}
+          onChange={(sellPercent) => {
+            if (config.takeProfitSteps[0]) {
+              const newSteps = [...config.takeProfitSteps];
+              newSteps[0] = { ...newSteps[0], sellPercent };
+              setConfig({ takeProfitSteps: newSteps });
+            }
+          }}
         />
         <NumberField
           label="TP2 利润%"
-          value={config.takeProfitStep2.profitPercent}
+          value={config.takeProfitSteps[1]?.profitPercent ?? 100}
           step="5"
           min="0"
-          onChange={(profitPercent) => setConfig({
-            takeProfitStep2: { ...config.takeProfitStep2, profitPercent },
-          })}
+          onChange={(profitPercent) => {
+            if (config.takeProfitSteps[1]) {
+              const newSteps = [...config.takeProfitSteps];
+              newSteps[1] = { ...newSteps[1], profitPercent };
+              setConfig({ takeProfitSteps: newSteps });
+            }
+          }}
         />
         <NumberField
           label="TP2 卖出%"
-          value={config.takeProfitStep2.sellPercent}
+          value={config.takeProfitSteps[1]?.sellPercent ?? 40}
           step="5"
           min="0"
-          onChange={(sellPercent) => setConfig({
-            takeProfitStep2: { ...config.takeProfitStep2, sellPercent },
-          })}
+          onChange={(sellPercent) => {
+            if (config.takeProfitSteps[1]) {
+              const newSteps = [...config.takeProfitSteps];
+              newSteps[1] = { ...newSteps[1], sellPercent };
+              setConfig({ takeProfitSteps: newSteps });
+            }
+          }}
         />
         <label className="flex items-center justify-between rounded-md border border-border/60 bg-background/50 px-2 py-2 text-xs">
           <span className="uppercase tracking-wide text-muted-foreground">自动狙击</span>

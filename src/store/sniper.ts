@@ -73,8 +73,7 @@ export interface SniperConfig {
   buyAmount: number;           // in BNB
   slippage: number;             // percentage
   stopLossPercent: number;     // e.g., 20 = 20% loss
-  takeProfitStep1: TakeProfitStep;
-  takeProfitStep2: TakeProfitStep;
+  takeProfitSteps: TakeProfitStep[]; // configurable multiple take profit steps
   autoSnipe: boolean;
   rpcUrl: string;              // custom RPC URL
 }
@@ -183,8 +182,7 @@ export const useSniperStore = create<SniperState>((set) => ({
     buyAmount: 0.01,
     slippage: 5,
     stopLossPercent: 20,
-    takeProfitStep1: DEFAULT_TP1,
-    takeProfitStep2: DEFAULT_TP2,
+    takeProfitSteps: [DEFAULT_TP1, DEFAULT_TP2],
     autoSnipe: true,
     rpcUrl: 'https://bsc-dataseed.binance.org/',
   },
