@@ -1,6 +1,6 @@
 import React from 'react';
 import { useSniperStore } from '@/store/sniper';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
@@ -17,8 +17,7 @@ export function SniperConfigPanel() {
           <Crosshair className="h-5 w-5 text-neon-green" />
           狙击配置
         </CardTitle>
-        <CardDescription>导入私钥后可自动狙击</CardDescription>
-      </CardHeader>
+              </CardHeader>
       <CardContent className="space-y-6">
         {/* Buy Amount */}
         <div className="space-y-2">

@@ -31,9 +31,7 @@ export function LivePricePanel() {
       <div className="flex items-center justify-between border-b border-border/60 px-3 py-2">
         <div>
           <h2 className="text-sm font-semibold">实时币价</h2>
-          <p className="text-[11px] text-muted-foreground">最近创建的 20 个 token</p>
-        </div>
-        <span className="font-mono text-xs text-muted-foreground">{latestCreatedTokens.length}</span>
+          <span className="font-mono text-xs text-muted-foreground">{latestCreatedTokens.length}</span>
       </div>
 
       <div className="flex-1 overflow-y-auto p-2">

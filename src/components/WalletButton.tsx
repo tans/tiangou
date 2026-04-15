@@ -76,7 +76,7 @@ export function WalletButton() {
 
   if (showSettingsModal) {
     return (
-      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-start justify-center z-50 pt-[15vh]">
         <div className="bg-card border border-border rounded-xl p-6 w-full max-w-md space-y-4">
           <div className="flex items-center gap-3">
             <Settings className="h-6 w-6 text-neon-green" />
@@ -140,7 +140,7 @@ export function WalletButton() {
 
   if (showImportModal) {
     return (
-      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-start justify-center z-50 pt-[15vh]">
         <div className="bg-card border border-border rounded-xl p-6 w-full max-w-md space-y-4">
           <div className="flex items-center gap-3">
             <Key className="h-6 w-6 text-neon-green" />
