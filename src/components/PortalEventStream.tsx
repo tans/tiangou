@@ -4,15 +4,15 @@ import { useSniperStore } from '@/store/sniper';
 import { formatAddress, formatTimestamp } from '@/lib/utils';
 
 const EVENT_LABELS: Record<string, string> = {
-  TokenCreated: 'NEW',
-  TokenQuoteSet: 'QUOTE',
-  TokenCurveSetV2: 'CURVE',
-  TokenDexSupplyThreshSet: 'THRESH',
-  FlapTokenTaxSet: 'TAX',
-  FlapTokenAsymmetricTaxSet: 'ATAX',
-  TokenBought: 'BUY',
-  TokenSold: 'SELL',
-  LaunchedToDEX: 'DEX',
+  TokenCreated: '创建',
+  TokenQuoteSet: '报价',
+  TokenCurveSetV2: '曲线',
+  TokenDexSupplyThreshSet: '阈值',
+  FlapTokenTaxSet: '税',
+  FlapTokenAsymmetricTaxSet: '非税',
+  TokenBought: '买入',
+  TokenSold: '卖出',
+  LaunchedToDEX: '发行',
 };
 
 export function PortalEventStream() {
