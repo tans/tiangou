@@ -32,6 +32,7 @@ export function LivePricePanel() {
         <div>
           <h2 className="text-sm font-semibold">实时币价</h2>
           <span className="font-mono text-xs text-muted-foreground">{latestCreatedTokens.length}</span>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-2">
