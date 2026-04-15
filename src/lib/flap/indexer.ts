@@ -242,8 +242,12 @@ async function applySnapshot(
     store.prependPortalEvents(snapshot.events);
   }
 
-  if (snapshot.createdTokens.length > 0) {
+  if (mergedLatest.length > 0) {
     store.setLatestCreatedTokens(mergedLatest);
+  }
+
+  // Always refresh quotes when there are tokens - even existing tokens may need quote fetching
+  if (mergedLatest.length > 0) {
     await refreshLiveQuotes(mergedLatest);
   }
 
