@@ -95,9 +95,12 @@ function normalizeEvent(eventName: typeof FLAP_PORTAL_EVENTS[number]['name'], lo
     details: args,
   };
 
+  const { summary, tooltip } = buildPortalEventSummary(event);
+
   return {
     ...event,
-    summary: buildPortalEventSummary(event),
+    summary,
+    tooltip,
   };
 }
 

@@ -53,6 +53,7 @@ export interface PortalStreamEvent {
   symbol?: string;
   name?: string;
   summary?: string;
+  tooltip?: string;
   ts?: number;
   blockNumber?: bigint;
   txHash?: Address;

@@ -6,7 +6,7 @@ import {
 } from '../flap/portal-feed';
 
 describe('Portal feed helpers', () => {
-  test('formats compact summaries for supported Portal events', () => {
+  test('formats compact summaries with exclamation marks for supported Portal events', () => {
     expect(
       buildPortalEventSummary({
         type: 'TokenCreated',
@@ -15,8 +15,8 @@ describe('Portal feed helpers', () => {
         details: {
           creator: '0x2222222222222222222222222222222222222222',
         },
-      }),
-    ).toContain('NEW');
+      }).summary,
+    ).toContain('❗');
 
     expect(
       buildPortalEventSummary({
@@ -27,8 +27,8 @@ describe('Portal feed helpers', () => {
           amount: 120000n,
           eth: 320000000000000000n,
         },
-      }),
-    ).toContain('BUY');
+      }).summary,
+    ).toContain('❗');
   });
 
   test('keeps only the latest 20 unique created tokens', () => {
