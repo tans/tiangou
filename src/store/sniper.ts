@@ -76,6 +76,9 @@ export interface SniperConfig {
   takeProfitSteps: TakeProfitStep[]; // configurable multiple take profit steps
   autoSnipe: boolean;
   rpcUrl: string;              // custom RPC URL
+  // External DEX (PancakeSwap) sell settings
+  externalSellEnabled: boolean;
+  externalSellMinMarketCap: number; // min market cap in USD to trigger external sell
 }
 
 export type MonitorStatus = 'idle' | 'connecting' | 'monitoring' | 'sniping' | 'error';
@@ -185,6 +188,8 @@ export const useSniperStore = create<SniperState>((set) => ({
     takeProfitSteps: [DEFAULT_TP1, DEFAULT_TP2],
     autoSnipe: true,
     rpcUrl: 'https://bsc-dataseed.binance.org/',
+    externalSellEnabled: false,
+    externalSellMinMarketCap: 100000, // $100k min market cap for external sell
   },
 
   currentQuotes: new Map(),

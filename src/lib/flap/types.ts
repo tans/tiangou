@@ -22,6 +22,10 @@ export interface FlapTokenFeedItem {
   taxDividend?: number;
   taxAddPool?: number;
   taxTreasury?: number;
+  // External DEX (PancakeSwap) info
+  poolAddress?: Address;
+  poolReserveBnb?: bigint;
+  poolReserveToken?: bigint;
 }
 
 export type PortalEventType =

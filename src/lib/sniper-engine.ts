@@ -6,6 +6,7 @@ import { quoteExactInput, buyToken, sellToken } from './flap/trading';
 import { createPosition, updatePosition, savePositions, loadPositions } from './flap/positions';
 import { isWalletConnected, getAccountAddress } from './flap/client';
 import { getBnbBalance } from './flap/trading';
+import { compareSellQuotes, sellTokenOnPancake, quotePancakeSwapOutput } from './dex';
 
 // One hour in milliseconds
 const ONE_HOUR = 60 * 60 * 1000;

@@ -142,6 +142,7 @@ function deriveCreatedTokens(events: PortalStreamEvent[]): FlapTokenFeedItem[] {
       if (event.type === 'LaunchedToDEX' && created.has(event.token)) {
         const token = created.get(event.token)!;
         token.progress = 100;
+        token.poolAddress = (event.details.pool as Address | undefined) ?? token.poolAddress;
       }
     });
 
