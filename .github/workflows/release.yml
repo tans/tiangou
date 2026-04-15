@@ -1,0 +1,51 @@
+name: Release Build
+
+# Trigger on any branch push except main
+# Main has its own GitHub Pages deploy workflow
+on:
+  push:
+    branches-ignore:
+      - 'main'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ubuntu-latest, windows-latest, macos-latest]
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: v__VERSION__
+          releaseName: 'Tiangou v__VERSION__'
+          releaseBody: |
+            Auto Sniper Bot Desktop Client
+
+            Download the installer for your platform below.
+          releaseDraft: true
+          prerelease: false
