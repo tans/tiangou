@@ -103,7 +103,7 @@ function normalizeEvent(eventName: typeof FLAP_PORTAL_EVENTS[number]['name'], lo
       address: token,
       symbol: (args.symbol as string) || '???',
       name: (args.name as string) || 'Unknown',
-      detectedAt: Number(args.ts ?? 0n) * 1000,
+      detectedAt: Number(args.ts ?? 0n) * 1000 || Date.now(),
       tgGroup,
     });
   }
