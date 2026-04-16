@@ -98,7 +98,7 @@ interface SniperState {
   detectedTokens: FlapTokenFeedItem[];
   recentToken: FlapTokenFeedItem | null;
   portalEvents: PortalStreamEvent[];
-  latestCreatedTokens: PortalTokenMeta[];
+  latestCreatedTokens: FlapTokenFeedItem[];
   liveQuotes: Map<Address, LiveTokenQuote>;
 
   // Positions

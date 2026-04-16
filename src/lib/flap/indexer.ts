@@ -178,7 +178,7 @@ function deriveCreatedTokens(events: PortalStreamEvent[]): FlapTokenFeedItem[] {
   return Array.from(created.values()).sort((left, right) => right.detectedAt - left.detectedAt);
 }
 
-async function refreshLiveQuotes(tokens: PortalTokenMeta[]) {
+async function refreshLiveQuotes(tokens: FlapTokenFeedItem[]) {
   const targets = tokens.slice(0, 20);
   await Promise.all(targets.map(async (token) => {
     let quote: LiveTokenQuote;
@@ -262,7 +262,7 @@ async function applySnapshot(
   isInitial: boolean,
 ) {
   const store = useSniperStore.getState();
-  const mergedLatest = mergeLatestCreatedTokens(store.latestCreatedTokens, snapshot.createdMeta);
+  const mergedLatest = mergeLatestCreatedTokens(store.latestCreatedTokens, snapshot.createdTokens);
 
   if (isInitial) {
     store.setPortalEvents(snapshot.events.slice(0, 100));
@@ -282,14 +282,9 @@ async function applySnapshot(
   historicalTokens = isInitial
     ? snapshot.createdTokens
     : mergeLatestCreatedTokens(
-        historicalTokens.map((token) => ({
-          address: token.address,
-          symbol: token.symbol,
-          name: token.name,
-          detectedAt: token.detectedAt,
-        })),
-        snapshot.createdMeta,
-      ).map(createFeedToken);
+        historicalTokens,
+        snapshot.createdTokens,
+      );
 }
 
 export function startTokenFeedPolling(

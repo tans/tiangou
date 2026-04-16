@@ -1,4 +1,4 @@
-import type { PortalStreamEvent, PortalTokenMeta } from './types';
+import type { PortalStreamEvent, PortalTokenMeta, FlapTokenFeedItem } from './types';
 
 function shortAddress(value: unknown): string {
   if (typeof value !== 'string' || value.length < 10) {
@@ -79,10 +79,10 @@ export function buildPortalEventSummary(event: Pick<PortalStreamEvent, 'type' | 
 }
 
 export function mergeLatestCreatedTokens(
-  current: PortalTokenMeta[],
-  incoming: PortalTokenMeta[],
-): PortalTokenMeta[] {
-  const deduped = new Map<string, PortalTokenMeta>();
+  current: FlapTokenFeedItem[],
+  incoming: FlapTokenFeedItem[],
+): FlapTokenFeedItem[] {
+  const deduped = new Map<string, FlapTokenFeedItem>();
 
   [...incoming, ...current]
     .sort((left, right) => right.detectedAt - left.detectedAt)
