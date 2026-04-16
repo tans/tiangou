@@ -138,9 +138,10 @@ class SniperEngine {
     // 6% in basis points — filter out any new CA with buy or sell tax > 6%
     const HIGH_TAX_THRESHOLD = 600n;
 
-    // Filter to only tokens detected in the last hour
+    // For monitoring display: filter by time and tax only (not suffix filter)
+    // The suffix filter is only for auto-sniping, not for showing tokens in monitor
     const recentTokens = tokens.filter(token => {
-      // Keep tokens from the last hour, but apply tax filter to new ones
+      // Keep tokens from the last hour that pass tax filter
       if (token.detectedAt >= oneHourAgo) {
         if (token.buyTax !== undefined && token.buyTax > HIGH_TAX_THRESHOLD) return false;
         if (token.sellTax !== undefined && token.sellTax > HIGH_TAX_THRESHOLD) return false;
@@ -149,6 +150,14 @@ class SniperEngine {
       // Also keep tokens that are already in our list (persistence)
       const existing = store.detectedTokens.find(t => t.address === token.address);
       return existing !== undefined;
+    });
+
+    // For auto-sniping: apply all filters including suffix check
+    const snipeableTokens = tokens.filter(token => {
+      if (token.detectedAt < oneHourAgo) return false;
+      if (token.buyTax !== undefined && token.buyTax > HIGH_TAX_THRESHOLD) return false;
+      if (token.sellTax !== undefined && token.sellTax > HIGH_TAX_THRESHOLD) return false;
+      return this.evaluateFilters(token);
     });
 
     // If initial load, set all historical tokens
@@ -166,11 +175,9 @@ class SniperEngine {
 
     // Auto snipe if enabled, not initial load, and wallet is connected
     if (!isInitial && config.autoSnipe && filters.enabled && isWalletConnected()) {
-      for (const token of recentTokens) {
-        if (this.evaluateFilters(token)) {
-          await this.executeBuy(token);
-          break;
-        }
+      for (const token of snipeableTokens) {
+        await this.executeBuy(token);
+        break;
       }
     }
   }
