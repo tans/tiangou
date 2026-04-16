@@ -88,8 +88,8 @@ export function PortalEventStream() {
                       </span>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <span className="cursor-help font-mono text-xs text-foreground">
-                            {event.symbol || formatAddress(event.token)}
+                          <span className="cursor-help text-sm font-semibold text-foreground">
+                            {event.name || event.symbol || formatAddress(event.token)}
                           </span>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -102,7 +102,7 @@ export function PortalEventStream() {
                     </span>
                   </div>
                   <div className="mt-1 flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
-                    <span>{formatAddress(event.token)}</span>
+                    <span>{event.symbol || '???'} · {formatAddress(event.token)}</span>
                     <span>{event.ts ? formatTimestamp(event.ts) : '--:--:--'}</span>
                   </div>
                 </div>
