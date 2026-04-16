@@ -7,22 +7,49 @@ const ONE_DAY = 24 * 60 * 60 * 1000;
 const ONE_WEEK = 7 * ONE_DAY;
 
 export function DailyStatsPanel() {
-  const { latestCreatedTokens } = useSniperStore();
+  const { latestCreatedTokens, filters } = useSniperStore();
+
+  const filteredTokens = useMemo(() => {
+    if (!filters.enabled) return latestCreatedTokens;
+    return latestCreatedTokens.filter((token) => {
+      if (filters.onlyTaxToken && !token.isTaxToken) return false;
+      if (token.progress < filters.minProgress || token.progress > filters.maxProgress) return false;
+      if (!filters.allowedVersions.includes(token.version)) return false;
+      if (token.buyTax !== undefined) {
+        const buyTaxPercent = Number(token.buyTax) / 100;
+        if (buyTaxPercent > filters.maxTaxRate) return false;
+      }
+      if (token.sellTax !== undefined) {
+        const sellTaxPercent = Number(token.sellTax) / 100;
+        if (sellTaxPercent > filters.maxTaxRate) return false;
+      }
+      if (filters.requireTgGroup && !token.hasTgGroup) return false;
+      if (token.marketCap !== undefined) {
+        if (filters.minMarketCap !== undefined && token.marketCap < filters.minMarketCap) return false;
+        if (filters.maxMarketCap !== undefined && token.marketCap > filters.maxMarketCap) return false;
+      }
+      if (filters.tokenAddressSuffix) {
+        const addressLower = token.address.toLowerCase();
+        if (!addressLower.endsWith(filters.tokenAddressSuffix.toLowerCase())) return false;
+      }
+      return true;
+    });
+  }, [latestCreatedTokens, filters]);
 
   const stats = useMemo(() => {
     const now = Date.now();
 
-    const tokens24h = latestCreatedTokens.filter(
+    const tokens24h = filteredTokens.filter(
       (t) => now - t.detectedAt <= ONE_DAY
     ).length;
 
-    const tokens7d = latestCreatedTokens.filter(
+    const tokens7d = filteredTokens.filter(
       (t) => now - t.detectedAt <= ONE_WEEK
     ).length;
 
     // Calculate hourly distribution for last 24h
     const hourlyCounts = new Array(24).fill(0);
-    latestCreatedTokens.forEach((token) => {
+    filteredTokens.forEach((token) => {
       const age = now - token.detectedAt;
       if (age <= ONE_DAY) {
         const hour = Math.floor((ONE_DAY - age) / (60 * 60 * 1000));
@@ -35,7 +62,7 @@ export function DailyStatsPanel() {
     const maxHourly = Math.max(...hourlyCounts, 1);
 
     return { tokens24h, tokens7d, hourlyCounts, maxHourly };
-  }, [latestCreatedTokens]);
+  }, [filteredTokens]);
 
   return (
     <Card className="border-border/50">

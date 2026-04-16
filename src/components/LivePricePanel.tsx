@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 
 import { useSniperStore } from '@/store/sniper';
 import { formatAddress, formatTimestamp } from '@/lib/utils';
@@ -24,25 +24,56 @@ function formatBnbPrice(value: number | null): string {
 }
 
 export function LivePricePanel() {
-  const { latestCreatedTokens, liveQuotes } = useSniperStore();
+  const { latestCreatedTokens, liveQuotes, filters } = useSniperStore();
+
+  const filteredTokens = useMemo(() => {
+    if (!filters.enabled) return latestCreatedTokens;
+    return latestCreatedTokens.filter((token) => {
+      if (filters.onlyTaxToken && !token.isTaxToken) return false;
+      if (token.progress < filters.minProgress || token.progress > filters.maxProgress) return false;
+      if (!filters.allowedVersions.includes(token.version)) return false;
+      // Tax rate filter
+      if (token.buyTax !== undefined) {
+        const buyTaxPercent = Number(token.buyTax) / 100;
+        if (buyTaxPercent > filters.maxTaxRate) return false;
+      }
+      if (token.sellTax !== undefined) {
+        const sellTaxPercent = Number(token.sellTax) / 100;
+        if (sellTaxPercent > filters.maxTaxRate) return false;
+      }
+      // TG group filter
+      if (filters.requireTgGroup && !token.hasTgGroup) return false;
+      // Market cap filter
+      if (token.marketCap !== undefined) {
+        if (filters.minMarketCap !== undefined && token.marketCap < filters.minMarketCap) return false;
+        if (filters.maxMarketCap !== undefined && token.marketCap > filters.maxMarketCap) return false;
+      }
+      // Token address suffix filter
+      if (filters.tokenAddressSuffix) {
+        const addressLower = token.address.toLowerCase();
+        if (!addressLower.endsWith(filters.tokenAddressSuffix.toLowerCase())) return false;
+      }
+      return true;
+    });
+  }, [latestCreatedTokens, filters]);
 
   return (
     <section className="flex min-h-[70vh] flex-col rounded-lg border border-border/60 bg-card/70 backdrop-blur">
       <div className="flex items-center justify-between border-b border-border/60 px-3 py-2">
         <div>
           <h2 className="text-sm font-semibold">实时币价</h2>
-          <span className="font-mono text-xs text-muted-foreground">{latestCreatedTokens.length}</span>
+          <span className="font-mono text-xs text-muted-foreground">{filteredTokens.length}</span>
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-2">
-        {latestCreatedTokens.length === 0 ? (
+        {filteredTokens.length === 0 ? (
           <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
             等待新币...
           </div>
         ) : (
           <div className="space-y-1">
-            {latestCreatedTokens.map((token) => {
+            {filteredTokens.map((token) => {
               const quote = liveQuotes.get(token.address);
 
               return (
