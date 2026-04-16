@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
-import { Flame, Tag, TrendingUp, Layers, DollarSign, MessageCircle, Percent } from 'lucide-react';
+import { Flame, Tag, TrendingUp, Layers, DollarSign, MessageCircle, Percent, Hash } from 'lucide-react';
 
 const VERSIONS = ['v1', 'v2', 'v3', 'v4', 'v5'];
 
@@ -157,7 +157,7 @@ export function FilterPanel() {
           </div>
 
           {/* Require TG Group */}
-          <div className="flex items-center justify-between py-3">
+          <div className="flex items-center justify-between py-3 border-b border-border/50">
             <div className="flex items-center gap-2">
               <MessageCircle className="h-4 w-4 text-muted-foreground" />
               <Label htmlFor="require-tg">必须有TG群</Label>
@@ -167,6 +167,41 @@ export function FilterPanel() {
               checked={filters.requireTgGroup}
               onCheckedChange={(checked) => setFilters({ requireTgGroup: checked })}
             />
+          </div>
+
+          {/* Exclude Pure Wallet Tax */}
+          <div className="flex items-center justify-between py-3 border-b border-border/50">
+            <div className="flex items-center gap-2">
+              <Tag className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <Label htmlFor="exclude-pure-wallet-tax">过滤纯私钱包税</Label>
+                <p className="text-xs text-muted-foreground mt-0.5">过滤税收100%进私人钱包的CA</p>
+              </div>
+            </div>
+            <Switch
+              id="exclude-pure-wallet-tax"
+              checked={filters.excludePureWalletTax}
+              onCheckedChange={(checked) => setFilters({ excludePureWalletTax: checked })}
+            />
+          </div>
+
+          {/* Token Address Suffix */}
+          <div className="py-4 border-b border-border/50">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Hash className="h-4 w-4 text-muted-foreground" />
+                <Label htmlFor="token-suffix">代币尾号筛选</Label>
+              </div>
+              <Input
+                id="token-suffix"
+                type="text"
+                value={filters.tokenAddressSuffix ?? ''}
+                onChange={(e) => setFilters({ tokenAddressSuffix: e.target.value || null })}
+                className="w-28 h-8 text-right font-mono text-sm"
+                placeholder="7777"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">为空时不过滤，例如: 7777</p>
           </div>
         </div>
       </CardContent>

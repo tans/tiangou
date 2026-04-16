@@ -66,6 +66,10 @@ export interface FilterConfig {
   requireTgGroup: boolean;
   // Tax rate filter (> 5.25% = no buy per issue requirement)
   maxTaxRate: number;
+  // Filter out tokens where 100% of tax goes to treasury/private wallet
+  excludePureWalletTax: boolean;
+  // Token address suffix filter (e.g., '7777' = only tokens ending in 7777)
+  tokenAddressSuffix: string | null;
 }
 
 // Sniper Config
@@ -179,6 +183,8 @@ export const useSniperStore = create<SniperState>((set) => ({
     minMarketCap: 0,
     requireTgGroup: false, // default off until TG detection is implemented
     maxTaxRate: 5.25, // issue requirement: > 5.25% tax = no buy
+    excludePureWalletTax: true, // filter out tokens where all tax goes to private wallet
+    tokenAddressSuffix: '7777', // only snipe tokens ending in 7777
   },
 
   config: {

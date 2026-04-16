@@ -135,11 +135,17 @@ class SniperEngine {
 
     const now = Date.now();
     const oneHourAgo = now - ONE_HOUR;
+    // 6% in basis points — filter out any new CA with buy or sell tax > 6%
+    const HIGH_TAX_THRESHOLD = 600n;
 
     // Filter to only tokens detected in the last hour
     const recentTokens = tokens.filter(token => {
-      // Keep tokens from the last hour
-      if (token.detectedAt >= oneHourAgo) return true;
+      // Keep tokens from the last hour, but apply tax filter to new ones
+      if (token.detectedAt >= oneHourAgo) {
+        if (token.buyTax !== undefined && token.buyTax > HIGH_TAX_THRESHOLD) return false;
+        if (token.sellTax !== undefined && token.sellTax > HIGH_TAX_THRESHOLD) return false;
+        return true;
+      }
       // Also keep tokens that are already in our list (persistence)
       const existing = store.detectedTokens.find(t => t.address === token.address);
       return existing !== undefined;
@@ -192,6 +198,16 @@ class SniperEngine {
       if (sellTaxPercent > filters.maxTaxRate) return false;
     }
 
+    // Filter out tokens where all tax goes purely to private wallet (treasury)
+    if (filters.excludePureWalletTax && token.isTaxToken) {
+      const hasTreasury = (token.taxTreasury ?? 0) > 0;
+      const hasBurn = (token.taxBurn ?? 0) > 0;
+      const hasDividend = (token.taxDividend ?? 0) > 0;
+      const hasAddPool = (token.taxAddPool ?? 0) > 0;
+      // If distribution data exists and treasury is the only destination, skip
+      if (hasTreasury && !hasBurn && !hasDividend && !hasAddPool) return false;
+    }
+
     // TG group filter
     if (filters.requireTgGroup && !token.hasTgGroup) return false;
 
@@ -199,6 +215,12 @@ class SniperEngine {
     if (token.marketCap !== undefined) {
       if (filters.minMarketCap !== undefined && token.marketCap < filters.minMarketCap) return false;
       if (filters.maxMarketCap !== undefined && token.marketCap > filters.maxMarketCap) return false;
+    }
+
+    // Token address suffix filter (e.g., '7777' = only tokens ending in 7777)
+    if (filters.tokenAddressSuffix) {
+      const addressLower = token.address.toLowerCase();
+      if (!addressLower.endsWith(filters.tokenAddressSuffix.toLowerCase())) return false;
     }
 
     return true;
