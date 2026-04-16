@@ -54,6 +54,12 @@ export function TokenCard({ token, isRecent }: TokenCardProps) {
                 税币
               </Badge>
             )}
+            {token.hasTgGroup && (
+              <Badge variant="default" className="gap-1 bg-blue-600">
+                <MessageCircle className="h-3 w-3" />
+                TG
+              </Badge>
+            )}
             {token.isTaxToken && (token.buyTax !== undefined || token.sellTax !== undefined) && (
               <button
                 onClick={() => setShowTaxDetails(!showTaxDetails)}
