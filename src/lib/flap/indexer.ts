@@ -131,43 +131,111 @@ function deriveCreatedTokens(events: PortalStreamEvent[]): FlapTokenFeedItem[] {
   [...events]
     .sort((left, right) => (left.ts ?? 0) - (right.ts ?? 0))
     .forEach((event) => {
+      // Check if this event belongs to a token we know about (from meta cache)
+      // even if we don't have a TokenCreated event for it
+      const existingToken = created.get(event.token);
+
+      // Update existing token with event data
+      if (existingToken) {
+        if (event.type === 'FlapTokenTaxSet') {
+          existingToken.isTaxToken = (event.details.tax as bigint | undefined ?? 0n) > 0n;
+          if (existingToken.buyTax === undefined) {
+            existingToken.buyTax = event.details.tax as bigint | undefined;
+          }
+          if (existingToken.sellTax === undefined) {
+            existingToken.sellTax = event.details.tax as bigint | undefined;
+          }
+        }
+
+        if (event.type === 'FlapTokenAsymmetricTaxSet') {
+          existingToken.isTaxToken =
+            (event.details.buyTax as bigint | undefined ?? 0n) > 0n ||
+            (event.details.sellTax as bigint | undefined ?? 0n) > 0n;
+          existingToken.buyTax = event.details.buyTax as bigint | undefined;
+          existingToken.sellTax = event.details.sellTax as bigint | undefined;
+        }
+
+        if (event.type === 'TokenQuoteSet') {
+          existingToken.quoteToken = (event.details.quoteToken as Address | undefined) ?? existingToken.quoteToken;
+        }
+
+        if (event.type === 'LaunchedToDEX') {
+          existingToken.progress = 100;
+          existingToken.poolAddress = (event.details.pool as Address | undefined) ?? existingToken.poolAddress;
+        }
+
+        if (event.type === 'TokenBought' || event.type === 'TokenSold') {
+          // Token has trading activity - ensure it exists
+          // This handles the case where TokenCreated was outside our historical window
+          if (!existingToken.name || existingToken.name === 'Unknown') {
+            const meta = tokenMetaCache.get(event.token);
+            if (meta) {
+              existingToken.name = meta.name;
+              existingToken.symbol = meta.symbol;
+            }
+          }
+        }
+      }
+
       if (event.type === 'TokenCreated') {
         const meta = tokenMetaCache.get(event.token);
         if (meta) {
-          created.set(event.token, createFeedToken(meta));
+          // Check if this is a new token or update existing
+          const existing = created.get(event.token);
+          if (existing) {
+            // Update existing with new meta
+            existing.name = meta.name;
+            existing.symbol = meta.symbol;
+            existing.detectedAt = meta.detectedAt;
+            existing.hasTgGroup = !!meta.tgGroup;
+          } else {
+            // Create new token
+            created.set(event.token, createFeedToken(meta));
+          }
         }
       }
 
-      if (event.type === 'FlapTokenTaxSet' && created.has(event.token)) {
-        const token = created.get(event.token)!;
-        token.isTaxToken = (event.details.tax as bigint | undefined ?? 0n) > 0n;
-        // For symmetric tax, both buy and sell tax are the same
-        if (token.buyTax === undefined) {
+      if (event.type === 'FlapTokenTaxSet' && !created.has(event.token)) {
+        // Token has tax event but no TokenCreated in window - check cache
+        const meta = tokenMetaCache.get(event.token);
+        if (meta) {
+          const token = createFeedToken(meta);
+          token.isTaxToken = (event.details.tax as bigint | undefined ?? 0n) > 0n;
           token.buyTax = event.details.tax as bigint | undefined;
-        }
-        if (token.sellTax === undefined) {
           token.sellTax = event.details.tax as bigint | undefined;
+          created.set(event.token, token);
         }
       }
 
-      if (event.type === 'FlapTokenAsymmetricTaxSet' && created.has(event.token)) {
-        const token = created.get(event.token)!;
-        token.isTaxToken =
-          (event.details.buyTax as bigint | undefined ?? 0n) > 0n ||
-          (event.details.sellTax as bigint | undefined ?? 0n) > 0n;
-        token.buyTax = event.details.buyTax as bigint | undefined;
-        token.sellTax = event.details.sellTax as bigint | undefined;
+      if (event.type === 'FlapTokenAsymmetricTaxSet' && !created.has(event.token)) {
+        const meta = tokenMetaCache.get(event.token);
+        if (meta) {
+          const token = createFeedToken(meta);
+          token.isTaxToken =
+            (event.details.buyTax as bigint | undefined ?? 0n) > 0n ||
+            (event.details.sellTax as bigint | undefined ?? 0n) > 0n;
+          token.buyTax = event.details.buyTax as bigint | undefined;
+          token.sellTax = event.details.sellTax as bigint | undefined;
+          created.set(event.token, token);
+        }
       }
 
-      if (event.type === 'TokenQuoteSet' && created.has(event.token)) {
-        const token = created.get(event.token)!;
-        token.quoteToken = (event.details.quoteToken as Address | undefined) ?? token.quoteToken;
+      if (event.type === 'TokenBought' && !created.has(event.token)) {
+        // Token has buy event but no TokenCreated in window - check cache
+        const meta = tokenMetaCache.get(event.token);
+        if (meta) {
+          const token = createFeedToken(meta);
+          created.set(event.token, token);
+        }
       }
 
-      if (event.type === 'LaunchedToDEX' && created.has(event.token)) {
-        const token = created.get(event.token)!;
-        token.progress = 100;
-        token.poolAddress = (event.details.pool as Address | undefined) ?? token.poolAddress;
+      if (event.type === 'TokenSold' && !created.has(event.token)) {
+        // Token has sell event but no TokenCreated in window - check cache
+        const meta = tokenMetaCache.get(event.token);
+        if (meta) {
+          const token = createFeedToken(meta);
+          created.set(event.token, token);
+        }
       }
     });
 
