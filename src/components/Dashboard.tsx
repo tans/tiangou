@@ -2,6 +2,7 @@ import React from 'react';
 
 import { CompactSniperBar } from './CompactSniperBar';
 import { DailyStatsPanel } from './DailyStatsPanel';
+import { FilterPanel } from './FilterPanel';
 import { LivePricePanel } from './LivePricePanel';
 import { PortalEventStream } from './PortalEventStream';
 import { StatusIndicator } from './StatusIndicator';
@@ -41,7 +42,10 @@ export function Dashboard() {
         <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_300px]">
           <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1.7fr_1fr]">
             <PortalEventStream />
-            <LivePricePanel />
+            <div className="space-y-3">
+              <LivePricePanel />
+              <FilterPanel />
+            </div>
           </div>
           <DailyStatsPanel />
         </div>
