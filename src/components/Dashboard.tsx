@@ -1,7 +1,6 @@
 import React from 'react';
 
 import { CompactSniperBar } from './CompactSniperBar';
-import { DailyStatsPanel } from './DailyStatsPanel';
 import { FilterPanel } from './FilterPanel';
 import { LivePricePanel } from './LivePricePanel';
 import { PortalEventStream } from './PortalEventStream';
@@ -47,7 +46,6 @@ export function Dashboard() {
               <FilterPanel />
             </div>
           </div>
-          <DailyStatsPanel />
         </div>
       </main>
     </div>
