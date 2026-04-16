@@ -53,6 +53,9 @@ export function TransactionTable() {
                     <div className="flex items-center gap-2 mb-1">
                       <SideIcon className={cn('h-4 w-4', side.className)} />
                       <span className="font-medium truncate">{tx.symbol}</span>
+                      {tx.marketCap !== undefined && (
+                        <span className="text-xs text-muted-foreground">ca ${formatNumber(tx.marketCap, 0)}</span>
+                      )}
                       <Badge variant={tx.status === 'success' ? 'success' : tx.status === 'failed' ? 'destructive' : 'secondary'}>
                         {status.label}
                       </Badge>

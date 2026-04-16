@@ -251,6 +251,7 @@ class SniperEngine {
       quoteAmount: bnbAmount,
       tokenAmount: 0n,
       price: 0n,
+      marketCap: token.marketCap,
       timestamp: Date.now(),
       status: 'pending' as const,
     };
@@ -372,6 +373,7 @@ class SniperEngine {
       quoteAmount: 0n,
       tokenAmount: sellAmount,
       price: 0n,
+      marketCap: store.detectedTokens.find(t => t.address === position.tokenAddress)?.marketCap,
       timestamp: Date.now(),
       status: 'pending' as const,
       positionId: position.id,

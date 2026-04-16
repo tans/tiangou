@@ -42,6 +42,7 @@ export interface Transaction {
   quoteAmount: bigint;      // BNB amount
   tokenAmount: bigint;      // token amount
   price: bigint;            // execution price (quote/token)
+  marketCap?: number;       // market cap in USD at time of transaction
   timestamp: number;
   status: 'pending' | 'success' | 'failed';
   gasUsed?: bigint;
