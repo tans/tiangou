@@ -3,6 +3,7 @@ import React from 'react';
 import { CompactSniperBar } from './CompactSniperBar';
 import { PortalEventStream } from './PortalEventStream';
 import { TokenMonitor } from './TokenMonitor';
+import { AllTokensPanel } from './AllTokensPanel';
 import { SettingsDialog } from './SettingsDialog';
 import { StatusIndicator } from './StatusIndicator';
 import { WalletButton } from './WalletButton';
@@ -39,9 +40,10 @@ export function Dashboard() {
       <main className="container mx-auto space-y-3 px-3 py-3">
         <CompactSniperBar />
 
-        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_2fr]">
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_1fr_1.5fr]">
           <PortalEventStream />
           <TokenMonitor />
+          <AllTokensPanel />
         </div>
       </main>
     </div>
