@@ -60,11 +60,3 @@ export interface PortalStreamEvent {
   txHash?: Address;
   details: Record<string, unknown>;
 }
-
-export interface LiveTokenQuote extends PortalTokenMeta {
-  priceInBnb: number | null;
-  quoteInputBnb: number | null;
-  outputAmount: bigint | null;
-  updatedAt: number | null;
-  stale: boolean;
-}

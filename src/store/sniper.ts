@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import { type Address } from 'viem';
 import type {
   FlapTokenFeedItem,
-  LiveTokenQuote,
   PortalStreamEvent,
   PortalTokenMeta,
 } from '../lib/flap/types';
@@ -100,7 +99,6 @@ interface SniperState {
   recentToken: FlapTokenFeedItem | null;
   portalEvents: PortalStreamEvent[];
   latestCreatedTokens: FlapTokenFeedItem[];
-  liveQuotes: Map<Address, LiveTokenQuote>;
 
   // Positions
   positions: Position[];
@@ -137,8 +135,7 @@ interface SniperState {
   setTokens: (tokens: FlapTokenFeedItem[]) => void;
   setPortalEvents: (events: PortalStreamEvent[]) => void;
   prependPortalEvents: (events: PortalStreamEvent[]) => void;
-  setLatestCreatedTokens: (tokens: PortalTokenMeta[]) => void;
-  upsertLiveQuote: (quote: LiveTokenQuote) => void;
+  setLatestCreatedTokens: (tokens: FlapTokenFeedItem[]) => void;
 }
 
 const DEFAULT_TP1: TakeProfitStep = {
@@ -166,7 +163,6 @@ export const useSniperStore = create<SniperState>((set) => ({
   recentToken: null,
   portalEvents: [],
   latestCreatedTokens: [],
-  liveQuotes: new Map(),
 
   positions: [],
 
@@ -268,10 +264,4 @@ export const useSniperStore = create<SniperState>((set) => ({
   })),
 
   setLatestCreatedTokens: (tokens) => set({ latestCreatedTokens: tokens }),
-
-  upsertLiveQuote: (quote) => set((state) => {
-    const next = new Map(state.liveQuotes);
-    next.set(quote.address, quote);
-    return { liveQuotes: next };
-  }),
 }));

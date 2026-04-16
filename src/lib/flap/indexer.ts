@@ -1,21 +1,17 @@
-import { parseEther, type Address } from 'viem';
+import { type Address } from 'viem';
 
 import { useSniperStore } from '@/store/sniper';
 import { FLAP_PORTAL_EVENTS } from './abi';
 import { getPublicClient } from './client';
 import { FLAP_PORTAL_ADDRESSES, BNB_MAINNET_CHAIN_ID, NATIVE_TOKEN_SENTINEL } from './constants';
 import { buildPortalEventSummary, mergeLatestCreatedTokens } from './portal-feed';
-import { quoteExactInput } from './trading';
-import type { FlapTokenFeedItem, LiveTokenQuote, PortalStreamEvent, PortalTokenMeta } from './types';
+import type { FlapTokenFeedItem, PortalStreamEvent, PortalTokenMeta } from './types';
 
 const FLAP_PORTAL_ADDRESS = FLAP_PORTAL_ADDRESSES[BNB_MAINNET_CHAIN_ID];
 const ONE_HOUR = 60 * 60 * 1000;
-const BLOCK_TIME = 3;
 // Reduced from 1200 to 200 blocks (~10 minutes) to improve polling speed
 const BLOCKS_PER_HOUR = 200;
 const CHUNK_SIZE = 200n;
-const PRICE_INPUT_AMOUNT = parseEther('0.01');
-const PRICE_INPUT_BNB = 0.01;
 
 let pollingInterval: ReturnType<typeof setInterval> | null = null;
 let tokenFeedCallback: ((tokens: FlapTokenFeedItem[], isInitial: boolean) => void) | null = null;
@@ -178,41 +174,6 @@ function deriveCreatedTokens(events: PortalStreamEvent[]): FlapTokenFeedItem[] {
   return Array.from(created.values()).sort((left, right) => right.detectedAt - left.detectedAt);
 }
 
-async function refreshLiveQuotes(tokens: FlapTokenFeedItem[]) {
-  const targets = tokens.slice(0, 20);
-  await Promise.all(targets.map(async (token) => {
-    let quote: LiveTokenQuote;
-
-    try {
-      const outputAmount = await quoteExactInput(NATIVE_TOKEN_SENTINEL, token.address, PRICE_INPUT_AMOUNT);
-      const normalizedOutput = Number(outputAmount) / 1e18;
-      const priceInBnb = normalizedOutput > 0
-        ? PRICE_INPUT_BNB / normalizedOutput
-        : null;
-
-      quote = {
-        ...token,
-        priceInBnb,
-        quoteInputBnb: PRICE_INPUT_BNB,
-        outputAmount,
-        updatedAt: Date.now(),
-        stale: false,
-      };
-    } catch {
-      quote = {
-        ...token,
-        priceInBnb: null,
-        quoteInputBnb: PRICE_INPUT_BNB,
-        outputAmount: null,
-        updatedAt: Date.now(),
-        stale: true,
-      };
-    }
-
-    useSniperStore.getState().upsertLiveQuote(quote);
-  }));
-}
-
 async function fetchPortalSnapshot(fromBlock: bigint, toBlock: bigint) {
   const publicClient = getPublicClient();
   const events: PortalStreamEvent[] = [];
@@ -272,11 +233,6 @@ async function applySnapshot(
 
   if (mergedLatest.length > 0) {
     store.setLatestCreatedTokens(mergedLatest);
-  }
-
-  // Always refresh quotes when there are tokens - even existing tokens may need quote fetching
-  if (mergedLatest.length > 0) {
-    await refreshLiveQuotes(mergedLatest);
   }
 
   historicalTokens = isInitial
