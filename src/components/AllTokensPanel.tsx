@@ -15,14 +15,17 @@ interface TokenInfo {
 }
 
 export function AllTokensPanel() {
-  const { portalEvents, status } = useSniperStore();
+  const { portalEvents, status, filters } = useSniperStore();
 
   // Group all tokens from events, keep latest event per token
   const allTokens = useMemo(() => {
     const seen = new Map<string, TokenInfo>();
+    const suffix = filters.tokenAddressSuffix;
     // traverse in reverse chronological order so first seen = latest
     for (const ev of portalEvents) {
       const addr = ev.token;
+      // Filter by tokenAddressSuffix if configured
+      if (suffix && !addr.toLowerCase().endsWith(suffix.toLowerCase())) continue;
       if (seen.has(addr)) {
         const existing = seen.get(addr)!;
         existing.eventCount++;
@@ -41,7 +44,7 @@ export function AllTokensPanel() {
       }
     }
     return Array.from(seen.values());
-  }, [portalEvents]);
+  }, [portalEvents, filters]);
 
   const getEventTypeBadge = (event?: PortalStreamEvent) => {
     if (!event) return null;
