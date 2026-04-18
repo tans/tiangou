@@ -138,13 +138,11 @@ class SniperEngine {
     // 6% in basis points — filter out any new CA with buy or sell tax > 6%
     const HIGH_TAX_THRESHOLD = 600n;
 
-    // For monitoring display: filter by time and tax only (not suffix filter)
-    // The suffix filter is only for auto-sniping, not for showing tokens in monitor
+    // For monitoring display: NO filtering, show all tokens
+    // Only filter by time (last hour) and persistence
     const recentTokens = tokens.filter(token => {
-      // Keep tokens from the last hour that pass tax filter
+      // Keep tokens from the last hour
       if (token.detectedAt >= oneHourAgo) {
-        if (token.buyTax !== undefined && token.buyTax > HIGH_TAX_THRESHOLD) return false;
-        if (token.sellTax !== undefined && token.sellTax > HIGH_TAX_THRESHOLD) return false;
         return true;
       }
       // Also keep tokens that are already in our list (persistence)
