@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useMemo, useEffect, useState, useRef } from 'react';
 import type { Address } from 'viem';
 
 import { useSniperStore } from '@/store/sniper';
@@ -15,37 +15,34 @@ interface TokenTradeEvent {
 export function PortalEventStream() {
   const { portalEvents, status } = useSniperStore();
   const [resolvedMeta, setResolvedMeta] = useState<Map<string, TokenMeta>>(new Map());
+  const resolvedMetaRef = useRef(resolvedMeta);
+
+  // Keep ref in sync with state
+  useEffect(() => { resolvedMetaRef.current = resolvedMeta; }, [resolvedMeta]);
 
   // Resolve token metadata when events come in
   useEffect(() => {
-    const unresolvedTokens = portalEvents
-      .map(ev => ev.token)
-      .filter(addr => {
-        const addrLower = addr.toLowerCase();
-        return !resolvedMeta.has(addrLower) && !resolvedMeta.has(addr);
-      });
+    const currentMeta = resolvedMetaRef.current;
+    const uniqueTokens = [...new Set(portalEvents.map(ev => ev.token))].filter(
+      addr => !currentMeta.has(addr.toLowerCase())
+    );
 
-    if (unresolvedTokens.length === 0) return;
-
-    // Dedupe
-    const uniqueTokens = [...new Set(unresolvedTokens)];
+    if (uniqueTokens.length === 0) return;
 
     Promise.all(
       uniqueTokens.map(async (addr) => {
         const meta = await getTokenMeta(addr as Address);
-        if (meta) {
-          return { addr: addr.toLowerCase(), meta };
-        }
+        if (meta) return { addr: addr.toLowerCase(), meta };
         return null;
       })
     ).then(results => {
-      const newMeta = new Map(resolvedMeta);
-      results.forEach(r => {
-        if (r) {
-          newMeta.set(r.addr, r.meta);
-        }
-      });
-      setResolvedMeta(newMeta);
+      if (results.some(r => r !== null)) {
+        setResolvedMeta(prev => {
+          const next = new Map(prev);
+          results.forEach(r => { if (r) next.set(r.addr, r.meta); });
+          return next;
+        });
+      }
     });
   }, [portalEvents]);
 

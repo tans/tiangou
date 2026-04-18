@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useMemo, useEffect, useState, useRef } from 'react';
 import type { Address } from 'viem';
 
 import { useSniperStore } from '@/store/sniper';
@@ -12,6 +12,7 @@ interface TokenInfo {
   token: string;
   name?: string;
   symbol?: string;
+  price?: number; // BNB per token
   lastEvent?: PortalStreamEvent;
   eventCount: number;
 }
@@ -19,38 +20,64 @@ interface TokenInfo {
 export function AllTokensPanel() {
   const { portalEvents, status, filters } = useSniperStore();
   const [resolvedMeta, setResolvedMeta] = useState<Map<string, TokenMeta>>(new Map());
+  const [tokenPrices, setTokenPrices] = useState<Map<string, number>>(new Map());
+  const resolvedMetaRef = useRef(resolvedMeta);
+  const tokenPricesRef = useRef(tokenPrices);
+
+  // Keep refs in sync with state
+  useEffect(() => { resolvedMetaRef.current = resolvedMeta; }, [resolvedMeta]);
+  useEffect(() => { tokenPricesRef.current = tokenPrices; }, [tokenPrices]);
 
   // Resolve token metadata when events come in
   useEffect(() => {
-    const unresolvedTokens = portalEvents
-      .map(ev => ev.token)
-      .filter(addr => {
-        const addrLower = addr.toLowerCase();
-        return !resolvedMeta.has(addrLower) && !resolvedMeta.has(addr);
-      });
+    const currentMeta = resolvedMetaRef.current;
+    const uniqueTokens = [...new Set(portalEvents.map(ev => ev.token))].filter(
+      addr => !currentMeta.has(addr.toLowerCase())
+    );
 
-    if (unresolvedTokens.length === 0) return;
-
-    // Dedupe
-    const uniqueTokens = [...new Set(unresolvedTokens)];
+    if (uniqueTokens.length === 0) return;
 
     Promise.all(
       uniqueTokens.map(async (addr) => {
         const meta = await getTokenMeta(addr as Address);
-        if (meta) {
-          return { addr: addr.toLowerCase(), meta };
-        }
+        if (meta) return { addr: addr.toLowerCase(), meta };
         return null;
       })
     ).then(results => {
-      const newMeta = new Map(resolvedMeta);
-      results.forEach(r => {
-        if (r) {
-          newMeta.set(r.addr, r.meta);
-        }
-      });
-      setResolvedMeta(newMeta);
+      if (results.some(r => r !== null)) {
+        setResolvedMeta(prev => {
+          const next = new Map(prev);
+          results.forEach(r => { if (r) next.set(r.addr, r.meta); });
+          return next;
+        });
+      }
     });
+  }, [portalEvents]);
+
+  // Calculate prices from trade events
+  useEffect(() => {
+    const currentPrices = tokenPricesRef.current;
+    const tradeEvents = portalEvents.filter(
+      ev => ev.type === 'TokenBought' || ev.type === 'TokenSold'
+    );
+
+    const newPrices = new Map(currentPrices);
+    for (const ev of tradeEvents) {
+      const addr = ev.token.toLowerCase();
+      const amount = ev.details?.amount as bigint | undefined;
+      const eth = ev.details?.eth as bigint | undefined;
+      if (amount && eth && amount > 0n) {
+        const price = Number(eth) / Number(amount);
+        // Only update if we don't have a price yet (first trade is most reliable)
+        if (!newPrices.has(addr)) {
+          newPrices.set(addr, price);
+        }
+      }
+    }
+
+    if (newPrices.size !== currentPrices.size) {
+      setTokenPrices(newPrices);
+    }
   }, [portalEvents]);
 
   // Group all tokens from events, keep latest event per token
@@ -71,17 +98,19 @@ export function AllTokensPanel() {
         }
       } else {
         const resolved = resolvedMeta.get(addr.toLowerCase());
+        const price = tokenPrices.get(addr.toLowerCase());
         seen.set(addr, {
           token: addr,
           name: ev.name || resolved?.name,
           symbol: ev.symbol || resolved?.symbol,
+          price,
           lastEvent: ev,
           eventCount: 1,
         });
       }
     }
     return Array.from(seen.values());
-  }, [portalEvents, filters, resolvedMeta]);
+  }, [portalEvents, filters, resolvedMeta, tokenPrices]);
 
   const getEventTypeBadge = (event?: PortalStreamEvent) => {
     if (!event) return null;
@@ -141,8 +170,13 @@ export function AllTokensPanel() {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col items-end gap-1">
                   {getEventTypeBadge(tokenInfo.lastEvent)}
+                  {tokenInfo.price !== undefined && (
+                    <span className="text-[10px] font-mono text-neon-green">
+                      {tokenInfo.price.toExponential(2)} BNB
+                    </span>
+                  )}
                   <span className="text-[10px] text-muted-foreground">
                     {tokenInfo.eventCount}事件
                   </span>
