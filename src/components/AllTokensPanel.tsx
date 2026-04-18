@@ -1,10 +1,12 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
+import type { Address } from 'viem';
 
 import { useSniperStore } from '@/store/sniper';
 import { formatAddress } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Coins, TrendingUp } from 'lucide-react';
 import type { PortalStreamEvent } from '@/lib/flap/types';
+import { getTokenMeta, type TokenMeta } from '@/lib/token-cache';
 
 interface TokenInfo {
   token: string;
@@ -16,6 +18,40 @@ interface TokenInfo {
 
 export function AllTokensPanel() {
   const { portalEvents, status, filters } = useSniperStore();
+  const [resolvedMeta, setResolvedMeta] = useState<Map<string, TokenMeta>>(new Map());
+
+  // Resolve token metadata when events come in
+  useEffect(() => {
+    const unresolvedTokens = portalEvents
+      .map(ev => ev.token)
+      .filter(addr => {
+        const addrLower = addr.toLowerCase();
+        return !resolvedMeta.has(addrLower) && !resolvedMeta.has(addr);
+      });
+
+    if (unresolvedTokens.length === 0) return;
+
+    // Dedupe
+    const uniqueTokens = [...new Set(unresolvedTokens)];
+
+    Promise.all(
+      uniqueTokens.map(async (addr) => {
+        const meta = await getTokenMeta(addr as Address);
+        if (meta) {
+          return { addr: addr.toLowerCase(), meta };
+        }
+        return null;
+      })
+    ).then(results => {
+      const newMeta = new Map(resolvedMeta);
+      results.forEach(r => {
+        if (r) {
+          newMeta.set(r.addr, r.meta);
+        }
+      });
+      setResolvedMeta(newMeta);
+    });
+  }, [portalEvents]);
 
   // Group all tokens from events, keep latest event per token
   const allTokens = useMemo(() => {
@@ -34,17 +70,18 @@ export function AllTokensPanel() {
           existing.lastEvent = ev;
         }
       } else {
+        const resolved = resolvedMeta.get(addr.toLowerCase());
         seen.set(addr, {
           token: addr,
-          name: ev.name,
-          symbol: ev.symbol,
+          name: ev.name || resolved?.name,
+          symbol: ev.symbol || resolved?.symbol,
           lastEvent: ev,
           eventCount: 1,
         });
       }
     }
     return Array.from(seen.values());
-  }, [portalEvents, filters]);
+  }, [portalEvents, filters, resolvedMeta]);
 
   const getEventTypeBadge = (event?: PortalStreamEvent) => {
     if (!event) return null;

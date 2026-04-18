@@ -1,9 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
+import type { Address } from 'viem';
 
 import { useSniperStore } from '@/store/sniper';
 import { formatAddress } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import type { PortalStreamEvent } from '@/lib/flap/types';
+import { getTokenMeta, type TokenMeta } from '@/lib/token-cache';
 
 interface TokenTradeEvent {
   event: PortalStreamEvent;
@@ -12,6 +14,40 @@ interface TokenTradeEvent {
 
 export function PortalEventStream() {
   const { portalEvents, status } = useSniperStore();
+  const [resolvedMeta, setResolvedMeta] = useState<Map<string, TokenMeta>>(new Map());
+
+  // Resolve token metadata when events come in
+  useEffect(() => {
+    const unresolvedTokens = portalEvents
+      .map(ev => ev.token)
+      .filter(addr => {
+        const addrLower = addr.toLowerCase();
+        return !resolvedMeta.has(addrLower) && !resolvedMeta.has(addr);
+      });
+
+    if (unresolvedTokens.length === 0) return;
+
+    // Dedupe
+    const uniqueTokens = [...new Set(unresolvedTokens)];
+
+    Promise.all(
+      uniqueTokens.map(async (addr) => {
+        const meta = await getTokenMeta(addr as Address);
+        if (meta) {
+          return { addr: addr.toLowerCase(), meta };
+        }
+        return null;
+      })
+    ).then(results => {
+      const newMeta = new Map(resolvedMeta);
+      results.forEach(r => {
+        if (r) {
+          newMeta.set(r.addr, r.meta);
+        }
+      });
+      setResolvedMeta(newMeta);
+    });
+  }, [portalEvents]);
 
   // Filter to only TokenBought/TokenSold, group by token, keep latest event per token
   const tradeEvents = useMemo(() => {
@@ -62,7 +98,7 @@ export function PortalEventStream() {
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <span className="cursor-help text-sm font-semibold text-foreground">
-                            {event.name || event.symbol || formatAddress(event.token)}
+                            {event.name || resolvedMeta.get(event.token.toLowerCase())?.name || event.symbol || resolvedMeta.get(event.token.toLowerCase())?.symbol || formatAddress(event.token)}
                           </span>
                         </TooltipTrigger>
                         <TooltipContent>
