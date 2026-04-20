@@ -8,9 +8,9 @@ import { buildPortalEventSummary, mergeLatestCreatedTokens } from './portal-feed
 import type { FlapTokenFeedItem, PortalStreamEvent, PortalTokenMeta } from './types';
 
 const FLAP_PORTAL_ADDRESS = FLAP_PORTAL_ADDRESSES[BNB_MAINNET_CHAIN_ID];
-const ONE_HOUR = 60 * 60 * 1000;
-// Reduced from 1200 to 200 blocks (~10 minutes) to improve polling speed
-const BLOCKS_PER_HOUR = 200;
+const HALF_HOUR = 30 * 60 * 1000;
+// BSC ~3s/block: 30 min = 600 blocks, used for initial page-open fetch
+const BLOCKS_PER_HALF_HOUR = 600;
 const CHUNK_SIZE = 200n;
 
 let pollingInterval: ReturnType<typeof setInterval> | null = null;
@@ -268,7 +268,7 @@ async function fetchPortalSnapshot(fromBlock: bigint, toBlock: bigint) {
   }
 
   const sortedEvents = events
-    .filter((event) => (event.ts ?? 0) >= Date.now() - ONE_HOUR)
+    .filter((event) => (event.ts ?? 0) >= Date.now() - HALF_HOUR)
     .sort((left, right) => (right.ts ?? 0) - (left.ts ?? 0));
 
   const createdTokens = deriveCreatedTokens(sortedEvents);
@@ -322,7 +322,7 @@ export function startTokenFeedPolling(
     try {
       const publicClient = getPublicClient();
       const blockNumber = await publicClient.getBlockNumber();
-      const fromBlock = blockNumber - BigInt(Math.floor(BLOCKS_PER_HOUR / 2));
+      const fromBlock = blockNumber - BigInt(BLOCKS_PER_HALF_HOUR);
       const snapshot = await fetchPortalSnapshot(fromBlock, blockNumber);
 
       lastFetchBlock = blockNumber;
