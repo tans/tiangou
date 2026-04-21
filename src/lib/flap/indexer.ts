@@ -135,14 +135,16 @@ function normalizeEvent(eventName: typeof FLAP_PORTAL_EVENTS[number]['name'], lo
   if (eventName === 'TokenCreated') {
     const metaStr = args.meta as string | undefined;
     const { tgGroup } = parseTokenMeta(metaStr);
-    // Only set symbol/name in cache if they are non-empty strings
-    // This prevents caching '???'/'Unknown' and allows fallback to contract lookup
-    const cachedSymbol = (args.symbol as string | undefined) || undefined;
-    const cachedName = (args.name as string | undefined) || undefined;
+    // Only set symbol/name in cache if args provides them
+    // This prevents caching empty strings that would override correct values later
+    // When args.symbol/name are undefined, leave cache untouched so deriveCreatedTokens can use fallback chain
+    const existingMeta = tokenMetaCache.get(token);
+    const cachedSymbol = (args.symbol as string | undefined);
+    const cachedName = (args.name as string | undefined);
     tokenMetaCache.set(token, {
       address: token,
-      symbol: cachedSymbol || '',
-      name: cachedName || '',
+      symbol: cachedSymbol !== undefined ? cachedSymbol : (existingMeta?.symbol ?? ''),
+      name: cachedName !== undefined ? cachedName : (existingMeta?.name ?? ''),
       detectedAt: Number(args.ts ?? 0n) * 1000 || Date.now(),
       tgGroup,
     });
@@ -366,6 +368,18 @@ async function applySnapshot(
 ) {
   const store = useSniperStore.getState();
   const mergedLatest = mergeLatestCreatedTokens(store.latestCreatedTokens, snapshot.createdTokens);
+
+  // Propagate correct symbol/name from createdTokens back to events
+  // This fixes cases where TokenBought/TokenSold arrived before TokenCreated
+  // and set placeholder '???'/'Unknown' values
+  const createdTokensMap = new Map(snapshot.createdTokens.map(t => [t.address, t]));
+  snapshot.events.forEach(event => {
+    const created = createdTokensMap.get(event.token);
+    if (created && created.symbol !== '???' && created.name !== 'Unknown') {
+      event.symbol = created.symbol;
+      event.name = created.name;
+    }
+  });
 
   if (isInitial) {
     store.setPortalEvents(snapshot.events.slice(0, 100));
