@@ -1,4 +1,4 @@
-import { parseEther } from 'viem';
+import { parseEther, type Address } from 'viem';
 import { useSniperStore } from '@/store/sniper';
 import type { FlapTokenFeedItem } from './flap/types';
 import { startTokenFeedPolling, stopTokenFeedPolling } from './flap/indexer';
@@ -332,7 +332,7 @@ class SniperEngine {
         position.remainingAmount
       );
 
-      store.setCurrentQuote(tokenAddress, currentQuote);
+      store.setCurrentQuote(tokenAddress as Address, currentQuote);
 
       const currentPrice = currentQuote > 0n ? position.entryQuoteAmount * position.remainingAmount / currentQuote : 0n;
       const priceChange = position.entryPrice > 0n
