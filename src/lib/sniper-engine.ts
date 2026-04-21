@@ -72,7 +72,7 @@ class SniperEngine {
     // Start token feed polling with historical data
     startTokenFeedPolling((tokens, isInitial) => {
       this.handleNewTokens(tokens, isInitial);
-    }, 10000);
+    }, 2500);
   }
 
   /**
@@ -106,7 +106,7 @@ class SniperEngine {
     // Start token feed polling with historical data
     startTokenFeedPolling((tokens, isInitial) => {
       this.handleNewTokens(tokens, isInitial);
-    }, 10000);
+    }, 2500);
   }
 
   /**

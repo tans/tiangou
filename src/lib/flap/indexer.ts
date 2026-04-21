@@ -351,7 +351,7 @@ async function applySnapshot(
 
 export function startTokenFeedPolling(
   callback: (tokens: FlapTokenFeedItem[], isInitial: boolean) => void,
-  intervalMs = 5000,
+  intervalMs = 2500,
 ): void {
   stopTokenFeedPolling();
   tokenFeedCallback = callback;
