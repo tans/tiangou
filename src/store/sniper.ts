@@ -7,12 +7,12 @@ import type {
 } from '../lib/flap/types';
 
 // Take Profit Step
-export interface TakeProfitStep {
+export type TakeProfitStep = {
   id: string;
   profitPercent: number; // e.g., 50 = 50% profit
   sellPercent: number;   // e.g., 30 = sell 30% of position
   executed: boolean;
-}
+};
 
 // Position
 export interface Position {
