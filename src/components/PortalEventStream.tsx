@@ -24,6 +24,12 @@ export function PortalEventStream() {
   // Keep ref in sync with state
   useEffect(() => { resolvedMetaRef.current = resolvedMeta; }, [resolvedMeta]);
 
+  // Update prevEventsLengthRef when portalEvents changes
+  useEffect(() => {
+    prevEventsLengthRef.current = portalEvents.length;
+    console.debug('[PortalEventStream] portalEvents updated, count:', portalEvents.length);
+  }, [portalEvents]);
+
   // Detect loading state: connecting with no events yet, or just started monitoring
   const isLoading = useMemo(() => {
     if (status === 'connecting') return true;
@@ -41,24 +47,23 @@ export function PortalEventStream() {
 
   // Resolve token metadata when events come in
   useEffect(() => {
-    const currentMeta = resolvedMetaRef.current;
-    const uniqueTokens = [...new Set(portalEvents.map(ev => ev.token))].filter(
-      addr => !currentMeta.has(addr.toLowerCase())
-    );
-
-    if (uniqueTokens.length === 0) return;
+    const uniqueTokens = [...new Set(portalEvents.map(ev => ev.token))];
 
     Promise.all(
       uniqueTokens.map(async (addr) => {
+        const addrLower = addr.toLowerCase();
+        // Skip already resolved (check at promise time to avoid redundant fetches)
+        if (resolvedMetaRef.current.has(addrLower)) return null;
         const meta = await getTokenMeta(addr as Address);
-        if (meta) return { addr: addr.toLowerCase(), meta };
+        if (meta) return { addr: addrLower, meta };
         return null;
       })
     ).then(results => {
-      if (results.some(r => r !== null)) {
+      const newEntries = results.filter((r): r is { addr: string; meta: TokenMeta } => r !== null);
+      if (newEntries.length > 0) {
         setResolvedMeta(prev => {
           const next = new Map(prev);
-          results.forEach(r => { if (r) next.set(r.addr, r.meta); });
+          newEntries.forEach(r => next.set(r.addr, r.meta));
           return next;
         });
       }

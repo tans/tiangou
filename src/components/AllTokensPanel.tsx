@@ -46,55 +46,52 @@ export function AllTokensPanel() {
 
   // Resolve token metadata when events come in
   useEffect(() => {
-    const currentMeta = resolvedMetaRef.current;
-    const uniqueTokens = [...new Set(portalEvents.map(ev => ev.token))].filter(
-      addr => !currentMeta.has(addr.toLowerCase())
-    );
-
-    if (uniqueTokens.length === 0) return;
+    const uniqueTokens = [...new Set(portalEvents.map(ev => ev.token))];
 
     Promise.all(
       uniqueTokens.map(async (addr) => {
+        const addrLower = addr.toLowerCase();
+        // Skip already resolved
+        if (resolvedMetaRef.current.has(addrLower)) return null;
         const meta = await getTokenMeta(addr as Address);
-        if (meta) return { addr: addr.toLowerCase(), meta };
+        if (meta) return { addr: addrLower, meta };
         return null;
       })
     ).then(results => {
-      if (results.some(r => r !== null)) {
+      const newEntries = results.filter((r): r is { addr: string; meta: TokenMeta } => r !== null);
+      if (newEntries.length > 0) {
         setResolvedMeta(prev => {
           const next = new Map(prev);
-          results.forEach(r => { if (r) next.set(r.addr, r.meta); });
+          newEntries.forEach(r => next.set(r.addr, r.meta));
           return next;
         });
       }
     });
-  }, [portalEvents]);
+  }, [portalEvents, resolvedMeta]);
 
   // Calculate prices from trade events
   useEffect(() => {
-    const currentPrices = tokenPricesRef.current;
     const tradeEvents = portalEvents.filter(
       ev => ev.type === 'TokenBought' || ev.type === 'TokenSold'
     );
 
-    const newPrices = new Map(currentPrices);
-    for (const ev of tradeEvents) {
-      const addr = ev.token.toLowerCase();
-      const amount = ev.details?.amount as bigint | undefined;
-      const eth = ev.details?.eth as bigint | undefined;
-      if (amount && eth && amount > 0n) {
-        const price = Number(eth) / Number(amount);
-        // Only update if we don't have a price yet (first trade is most reliable)
-        if (!newPrices.has(addr)) {
-          newPrices.set(addr, price);
+    if (tradeEvents.length === 0) return;
+
+    setTokenPrices(prev => {
+      const next = new Map(prev);
+      for (const ev of tradeEvents) {
+        const addr = ev.token.toLowerCase();
+        if (next.has(addr)) continue;
+        const amount = ev.details?.amount as bigint | undefined;
+        const eth = ev.details?.eth as bigint | undefined;
+        if (amount && eth && amount > 0n) {
+          const price = Number(eth) / Number(amount);
+          next.set(addr, price);
         }
       }
-    }
-
-    if (newPrices.size !== currentPrices.size) {
-      setTokenPrices(newPrices);
-    }
-  }, [portalEvents]);
+      return next;
+    });
+  }, [portalEvents, tokenPrices]);
 
   // Group all tokens from events, keep latest event per token
   const allTokens = useMemo(() => {
