@@ -49,7 +49,6 @@ export async function swapExactInput(
 
   try {
     const hash = await walletClient.writeContract({
-      account,
       address: FLAP_PORTAL_ADDRESS as `0x${string}`,
       abi: FLAP_PORTAL_ABI,
       functionName: 'swapExactInput',

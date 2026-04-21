@@ -2,7 +2,6 @@ import { readContract, writeContract, waitForTransactionReceipt } from 'viem/act
 import { getPublicClient, walletClient, getAccountAddress } from './client';
 import { PANCAKESWAP_ROUTER_ADDRESS, PANCKESWAP_LP_ABI, BNB_MAINNET_CHAIN_ID, NATIVE_TOKEN_SENTINEL } from './constants';
 import type { Address } from 'viem';
-import type { Address } from 'viem';
 
 // PancakeSwap Router ABI for swap
 const PANCAKESWAP_ROUTER_ABI = [
@@ -139,7 +138,6 @@ export async function sellOnPancakeSwap(
 
     // First need to approve the router to spend our tokens
     const approveHash = await walletClient.writeContract({
-      account,
       address: tokenAddress,
       abi: [
         {
@@ -160,11 +158,10 @@ export async function sellOnPancakeSwap(
 
     // Execute swap
     const hash = await walletClient.writeContract({
-      account,
       address: PANCAKESWAP_ROUTER_ADDRESS,
       abi: PANCAKESWAP_ROUTER_ABI,
       functionName: 'swapExactTokensForETH',
-      args: [tokenAmount, minOutput, [tokenAddress, WBNB], account, deadline],
+      args: [tokenAmount, minOutput, [tokenAddress, WBNB], account as `0x${string}`, deadline],
     });
 
     const receipt = await getPublicClient().waitForTransactionReceipt({ hash });
