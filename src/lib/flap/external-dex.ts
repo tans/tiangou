@@ -137,7 +137,7 @@ export async function sellOnPancakeSwap(
     const deadline = BigInt(Math.floor(Date.now() / 1000) + 60 * 20); // 20 min deadline
 
     // First need to approve the router to spend our tokens
-    const approveHash = await walletClient.writeContract({
+    const approveHash = await (walletClient.writeContract as any)({
       address: tokenAddress,
       abi: [
         {
@@ -157,7 +157,7 @@ export async function sellOnPancakeSwap(
     await getPublicClient().waitForTransactionReceipt({ hash: approveHash });
 
     // Execute swap
-    const hash = await walletClient.writeContract({
+    const hash = await (walletClient.writeContract as any)({
       address: PANCAKESWAP_ROUTER_ADDRESS,
       abi: PANCAKESWAP_ROUTER_ABI,
       functionName: 'swapExactTokensForETH',

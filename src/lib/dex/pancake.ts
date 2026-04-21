@@ -76,7 +76,7 @@ export async function sellTokenOnPancake(
 
     if (allowance < tokenAmount) {
       // Approve router to spend tokens
-      const approveHash = await walletClient.writeContract({
+      const approveHash = await (walletClient.writeContract as any)({
         address: tokenAddress as `0x${string}`,
         abi: ERC20_ABI,
         functionName: 'approve',
@@ -88,7 +88,7 @@ export async function sellTokenOnPancake(
 
     const deadline = BigInt(Math.floor(Date.now() / 1000) + 60 * 10); // 10 minutes
 
-    const hash = await walletClient.writeContract({
+    const hash = await (walletClient.writeContract as any)({
       address: ROUTER_ADDRESS as `0x${string}`,
       abi: DEX_ROUTER_ABI,
       functionName: 'swapExactTokensForETHSupportingFeeOnTransferTokens',
@@ -128,7 +128,7 @@ export async function buyTokenOnPancake(
   try {
     const deadline = BigInt(Math.floor(Date.now() / 1000) + 60 * 10); // 10 minutes
 
-    const hash = await walletClient.writeContract({
+    const hash = await (walletClient.writeContract as any)({
       address: ROUTER_ADDRESS as `0x${string}`,
       abi: DEX_ROUTER_ABI,
       functionName: 'swapExactETHForTokensSupportingFeeOnTransferTokens',
