@@ -1,10 +1,11 @@
-import React, { useMemo, useEffect, useState, useRef } from 'react';
+import React, { useMemo, useEffect, useState, useRef, useCallback } from 'react';
 import type { Address } from 'viem';
 
 import { useSniperStore } from '@/store/sniper';
 import { formatAddress } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Coins, TrendingUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Coins, TrendingUp, RefreshCw, Loader2 } from 'lucide-react';
 import type { PortalStreamEvent } from '@/lib/flap/types';
 import { getTokenMeta, type TokenMeta } from '@/lib/token-cache';
 
@@ -18,15 +19,30 @@ interface TokenInfo {
 }
 
 export function AllTokensPanel() {
-  const { portalEvents, status, filters } = useSniperStore();
+  const { portalEvents, status, filters, setPortalEvents } = useSniperStore();
   const [resolvedMeta, setResolvedMeta] = useState<Map<string, TokenMeta>>(new Map());
   const [tokenPrices, setTokenPrices] = useState<Map<string, number>>(new Map());
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const resolvedMetaRef = useRef(resolvedMeta);
   const tokenPricesRef = useRef(tokenPrices);
 
   // Keep refs in sync with state
   useEffect(() => { resolvedMetaRef.current = resolvedMeta; }, [resolvedMeta]);
   useEffect(() => { tokenPricesRef.current = tokenPrices; }, [tokenPrices]);
+
+  // Detect loading state
+  const isLoading = useMemo(() => {
+    if (status === 'connecting') return true;
+    if (status === 'monitoring' && portalEvents.length === 0) return true;
+    return false;
+  }, [status, portalEvents.length]);
+
+  // Handle refresh - clear events and wait for new ones
+  const handleRefresh = useCallback(() => {
+    setIsRefreshing(true);
+    setPortalEvents([]);
+    setTimeout(() => setIsRefreshing(false), 500);
+  }, [setPortalEvents]);
 
   // Resolve token metadata when events come in
   useEffect(() => {
@@ -137,10 +153,23 @@ export function AllTokensPanel() {
           <div className="flex items-center gap-2">
             <Coins className="h-4 w-4 text-neon-green" />
             <span className="text-sm">全部代币</span>
+            {isLoading && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
           </div>
-          <span className="text-sm font-normal text-muted-foreground">
-            {allTokens.length} 个
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-normal text-muted-foreground">
+              {allTokens.length} 个
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={handleRefresh}
+              disabled={isRefreshing || status === 'connecting'}
+              title="清空事件"
+            >
+              <RefreshCw className={`h-3 w-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent>

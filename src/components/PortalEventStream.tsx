@@ -1,11 +1,13 @@
-import React, { useMemo, useEffect, useState, useRef } from 'react';
+import React, { useMemo, useEffect, useState, useRef, useCallback } from 'react';
 import type { Address } from 'viem';
 
 import { useSniperStore } from '@/store/sniper';
 import { formatAddress } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { Button } from './ui/button';
 import type { PortalStreamEvent } from '@/lib/flap/types';
 import { getTokenMeta, type TokenMeta } from '@/lib/token-cache';
+import { RefreshCw, Loader2 } from 'lucide-react';
 
 interface TokenTradeEvent {
   event: PortalStreamEvent;
@@ -13,12 +15,29 @@ interface TokenTradeEvent {
 }
 
 export function PortalEventStream() {
-  const { portalEvents, status } = useSniperStore();
+  const { portalEvents, status, setPortalEvents } = useSniperStore();
   const [resolvedMeta, setResolvedMeta] = useState<Map<string, TokenMeta>>(new Map());
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const resolvedMetaRef = useRef(resolvedMeta);
+  const prevEventsLengthRef = useRef(portalEvents.length);
 
   // Keep ref in sync with state
   useEffect(() => { resolvedMetaRef.current = resolvedMeta; }, [resolvedMeta]);
+
+  // Detect loading state: connecting with no events yet, or just started monitoring
+  const isLoading = useMemo(() => {
+    if (status === 'connecting') return true;
+    if (status === 'monitoring' && portalEvents.length === 0) return true;
+    return false;
+  }, [status, portalEvents.length]);
+
+  // Handle refresh - clear events and wait for new ones
+  const handleRefresh = useCallback(() => {
+    setIsRefreshing(true);
+    setPortalEvents([]);
+    // Reset refresh state after a short delay
+    setTimeout(() => setIsRefreshing(false), 500);
+  }, [setPortalEvents]);
 
   // Resolve token metadata when events come in
   useEffect(() => {
@@ -68,7 +87,20 @@ export function PortalEventStream() {
             <h2 className="text-sm font-semibold">交易事件</h2>
             <p className="text-[11px] text-muted-foreground">币名 + 事件名 + 区块号</p>
           </div>
-          <span className="font-mono text-xs text-muted-foreground">{tradeEvents.length}</span>
+          <div className="flex items-center gap-2">
+            {isLoading && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+            <span className="font-mono text-xs text-muted-foreground">{tradeEvents.length}</span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={handleRefresh}
+              disabled={isRefreshing || status === 'connecting'}
+              title="清空事件"
+            >
+              <RefreshCw className={`h-3 w-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-2">
