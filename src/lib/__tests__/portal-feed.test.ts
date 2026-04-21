@@ -37,6 +37,11 @@ describe('Portal feed helpers', () => {
       symbol: `T${index + 1}`,
       name: `Token ${index + 1}`,
       detectedAt: index + 1,
+      version: 'v1',
+      isTaxToken: false,
+      quoteToken: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+      progress: 0,
+      tradable: true,
     }));
 
     const merged = mergeLatestCreatedTokens([], tokens);
