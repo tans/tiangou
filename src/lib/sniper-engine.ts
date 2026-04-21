@@ -452,6 +452,7 @@ class SniperEngine {
           remainingAmount: 0n,
           status: 'closed',
         });
+        store.clearCurrentQuote(position.tokenAddress);
         this.stopQuotePolling(position.tokenAddress);
       } else {
         store.updatePosition(position.id, {

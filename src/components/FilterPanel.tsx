@@ -19,6 +19,14 @@ export function FilterPanel() {
     setFilters({ allowedVersions: newVersions });
   };
 
+  const selectAllVersions = () => {
+    setFilters({ allowedVersions: [...VERSIONS] });
+  };
+
+  const deselectAllVersions = () => {
+    setFilters({ allowedVersions: [] });
+  };
+
   return (
     <Card className="border-border/50">
       <CardHeader className="pb-4">
@@ -98,9 +106,25 @@ export function FilterPanel() {
 
           {/* Versions */}
           <div className="py-4 border-b border-border/50">
-            <div className="flex items-center gap-2 mb-3">
-              <Layers className="h-4 w-4 text-muted-foreground" />
-              <Label>版本筛选</Label>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Layers className="h-4 w-4 text-muted-foreground" />
+                <Label>版本筛选</Label>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={selectAllVersions}
+                  className="px-2 py-1 rounded text-xs bg-secondary text-muted-foreground hover:bg-secondary/80 transition-colors"
+                >
+                  全部选中
+                </button>
+                <button
+                  onClick={deselectAllVersions}
+                  className="px-2 py-1 rounded text-xs bg-secondary text-muted-foreground hover:bg-secondary/80 transition-colors"
+                >
+                  全部取消
+                </button>
+              </div>
             </div>
             <div className="flex flex-wrap gap-2">
               {VERSIONS.map((version) => (

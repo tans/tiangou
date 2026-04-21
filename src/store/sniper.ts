@@ -131,6 +131,7 @@ interface SniperState {
   setPositions: (positions: Position[]) => void;
   removePosition: (positionId: string) => void;
   setCurrentQuote: (tokenAddress: Address, quote: bigint) => void;
+  clearCurrentQuote: (tokenAddress: Address) => void;
   clearTokens: () => void;
   setTokens: (tokens: FlapTokenFeedItem[]) => void;
   setPortalEvents: (events: PortalStreamEvent[]) => void;
@@ -250,6 +251,12 @@ export const useSniperStore = create<SniperState>((set) => ({
   setCurrentQuote: (tokenAddress, quote) => set((state) => {
     const newQuotes = new Map(state.currentQuotes);
     newQuotes.set(tokenAddress, quote);
+    return { currentQuotes: newQuotes };
+  }),
+
+  clearCurrentQuote: (tokenAddress) => set((state) => {
+    const newQuotes = new Map(state.currentQuotes);
+    newQuotes.delete(tokenAddress);
     return { currentQuotes: newQuotes };
   }),
 
