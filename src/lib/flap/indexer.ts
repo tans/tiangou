@@ -337,8 +337,10 @@ async function applySnapshot(
 
   if (isInitial) {
     store.setPortalEvents(snapshot.events.slice(0, 100));
+    console.log('[Indexer] setPortalEvents called with', snapshot.events.length, 'events');
   } else if (snapshot.events.length > 0) {
     store.prependPortalEvents(snapshot.events);
+    console.log('[Indexer] prependPortalEvents called with', snapshot.events.length, 'events');
   }
 
   if (mergedLatest.length > 0) {
