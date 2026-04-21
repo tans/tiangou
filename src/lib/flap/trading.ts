@@ -2,6 +2,7 @@ import { readContract } from 'viem/actions';
 import { FLAP_PORTAL_ABI } from './abi';
 import { FLAP_PORTAL_ADDRESSES, BNB_MAINNET_CHAIN_ID, NATIVE_TOKEN_SENTINEL } from './constants';
 import { getPublicClient, walletClient, getAccountAddress } from './client';
+import type { Address } from 'viem';
 
 const FLAP_PORTAL_ADDRESS = FLAP_PORTAL_ADDRESSES[BNB_MAINNET_CHAIN_ID];
 
@@ -41,7 +42,7 @@ export async function swapExactInput(
     return { success: false, error: '钱包未连接' };
   }
 
-  const account = getAccountAddress();
+  const account = getAccountAddress() as Address | null;
   if (!account) {
     return { success: false, error: '无账户' };
   }

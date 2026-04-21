@@ -2,6 +2,7 @@ import { readContract, writeContract, simulateContract } from 'viem/actions';
 import { DEX_ROUTER_ABI, ERC20_ABI } from './abi';
 import { PANCAKE_ROUTER_V2, WBNB, BNB_MAINNET_CHAIN_ID } from './constants';
 import { getPublicClient, walletClient, getAccountAddress } from '../flap/client';
+import type { Address } from 'viem';
 
 const ROUTER_ADDRESS = PANCAKE_ROUTER_V2[BNB_MAINNET_CHAIN_ID];
 const WBNB_ADDRESS = WBNB[BNB_MAINNET_CHAIN_ID];
@@ -59,7 +60,7 @@ export async function sellTokenOnPancake(
     return { success: false, error: '钱包未连接' };
   }
 
-  const account = getAccountAddress();
+  const account = getAccountAddress() as Address | null;
   if (!account) {
     return { success: false, error: '无账户' };
   }
@@ -121,7 +122,7 @@ export async function buyTokenOnPancake(
     return { success: false, error: '钱包未连接' };
   }
 
-  const account = getAccountAddress();
+  const account = getAccountAddress() as Address | null;
   if (!account) {
     return { success: false, error: '无账户' };
   }

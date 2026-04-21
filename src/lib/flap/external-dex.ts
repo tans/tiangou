@@ -2,6 +2,7 @@ import { readContract, writeContract, waitForTransactionReceipt } from 'viem/act
 import { getPublicClient, walletClient, getAccountAddress } from './client';
 import { PANCAKESWAP_ROUTER_ADDRESS, PANCKESWAP_LP_ABI, BNB_MAINNET_CHAIN_ID, NATIVE_TOKEN_SENTINEL } from './constants';
 import type { Address } from 'viem';
+import type { Address } from 'viem';
 
 // PancakeSwap Router ABI for swap
 const PANCAKESWAP_ROUTER_ABI = [
@@ -123,7 +124,7 @@ export async function sellOnPancakeSwap(
     return { success: false, error: '钱包未连接' };
   }
 
-  const account = getAccountAddress();
+  const account = getAccountAddress() as Address | null;
   if (!account) {
     return { success: false, error: '无账户' };
   }
