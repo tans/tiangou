@@ -182,7 +182,7 @@ export const useSniperStore = create<SniperState>((set) => ({
     requireTgGroup: false, // default off until TG detection is implemented
     maxTaxRate: 5.25, // issue requirement: > 5.25% tax = no buy
     excludePureWalletTax: true, // filter out tokens where all tax goes to private wallet
-    tokenAddressSuffix: '7777', // only snipe tokens ending in 7777
+    tokenAddressSuffix: null, // null = no filter, '7777' = only tokens ending in 7777
   },
 
   config: {
