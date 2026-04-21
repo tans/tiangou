@@ -1,5 +1,6 @@
 import React from 'react';
-import { useSniperStore, TakeProfitStep } from '@/store/sniper';
+import { useSniperStore } from '@/store/sniper';
+import type { TakeProfitStep } from '@/store/sniper';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
