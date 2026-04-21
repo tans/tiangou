@@ -4,7 +4,6 @@
  */
 
 import type { Address } from 'viem';
-import type { Token } from '@/store/sniper';
 
 // The Graph endpoints for Uniswap V2
 const THEGRAPH_UNISWAP_V2_ENDPOINT = 'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2';
