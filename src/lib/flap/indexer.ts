@@ -347,6 +347,18 @@ async function fetchPortalSnapshot(fromBlock: bigint, toBlock: bigint) {
     .filter((event) => (event.ts ?? 0) >= Date.now() - HALF_HOUR)
     .sort((left, right) => (right.ts ?? 0) - (left.ts ?? 0));
 
+  console.log('[Indexer] fetchPortalSnapshot', {
+    fromBlock: fromBlock.toString(),
+    toBlock: toBlock.toString(),
+    totalEventsFetched: events.length,
+    eventsAfterTimeFilter: sortedEvents.length,
+    timeFilterMs: HALF_HOUR,
+    oldestEventTs: sortedEvents.length > 0 ? sortedEvents[sortedEvents.length - 1].ts : null,
+    newestEventTs: sortedEvents.length > 0 ? sortedEvents[0].ts : null,
+    now: Date.now(),
+    nowMinusHalfHour: Date.now() - HALF_HOUR
+  });
+
   const createdTokens = deriveCreatedTokens(sortedEvents);
   const createdMeta = createdTokens.map<PortalTokenMeta>((token) => ({
     address: token.address,
@@ -387,6 +399,8 @@ async function applySnapshot(
   } else if (snapshot.events.length > 0) {
     store.prependPortalEvents(snapshot.events);
     console.log('[Indexer] prependPortalEvents called with', snapshot.events.length, 'events');
+  } else {
+    console.log('[Indexer] applySnapshot called but no events to update - snapshot.events is empty');
   }
 
   if (mergedLatest.length > 0) {
@@ -394,11 +408,14 @@ async function applySnapshot(
   }
 
   // Debug: log portal events update (show state BEFORE and AFTER)
+  const portalEventsLengthAfter = useSniperStore.getState().portalEvents.length;
   console.log('[Indexer] applySnapshot', {
     isInitial,
     eventCount: snapshot.events.length,
     createdTokenCount: snapshot.createdTokens.length,
-    portalEventsLengthBefore: store.portalEvents.length
+    portalEventsLengthBefore: store.portalEvents.length,
+    portalEventsLengthAfter,
+    updated: portalEventsLengthAfter !== store.portalEvents.length
   });
 
   historicalTokens = isInitial
@@ -439,9 +456,11 @@ export function startTokenFeedPolling(
         const blockNumber = await publicClient.getBlockNumber();
 
         if (blockNumber <= lastFetchBlock) {
+          console.log('[Indexer] Polling: block number not advanced', { blockNumber, lastFetchBlock });
           return;
         }
 
+        console.log('[Indexer] Polling: fetching new blocks', { fromBlock: lastFetchBlock + 1n, toBlock: blockNumber });
         const snapshot = await fetchPortalSnapshot(lastFetchBlock + 1n, blockNumber);
         lastFetchBlock = blockNumber;
 
