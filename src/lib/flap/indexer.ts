@@ -95,10 +95,14 @@ function normalizeEvent(eventName: typeof FLAP_PORTAL_EVENTS[number]['name'], lo
   if (eventName === 'TokenCreated') {
     const metaStr = args.meta as string | undefined;
     const { tgGroup } = parseTokenMeta(metaStr);
+    // Only set symbol/name in cache if they are non-empty strings
+    // This prevents caching '???'/'Unknown' and allows fallback to contract lookup
+    const cachedSymbol = (args.symbol as string | undefined) || undefined;
+    const cachedName = (args.name as string | undefined) || undefined;
     tokenMetaCache.set(token, {
       address: token,
-      symbol: (args.symbol as string) || '???',
-      name: (args.name as string) || 'Unknown',
+      symbol: cachedSymbol || '',
+      name: cachedName || '',
       detectedAt: Number(args.ts ?? 0n) * 1000 || Date.now(),
       tgGroup,
     });
