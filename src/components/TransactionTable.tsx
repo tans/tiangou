@@ -20,6 +20,12 @@ export function TransactionTable() {
     sell: { label: '卖出', icon: ArrowUpRight, className: 'text-neon-blue' },
   };
 
+  const triggerConfig = {
+    manual: { label: '手动', className: 'bg-slate-500/20 text-slate-400' },
+    take_profit: { label: '止盈', className: 'bg-neon-green/20 text-neon-green' },
+    stop_loss: { label: '止损', className: 'bg-neon-red/20 text-neon-red' },
+  };
+
   return (
     <Card className="border-border/50">
       <CardHeader className="pb-4">
@@ -41,6 +47,7 @@ export function TransactionTable() {
             {transactions.map((tx) => {
               const status = statusConfig[tx.status];
               const side = sideConfig[tx.side];
+              const trigger = triggerConfig[tx.triggeredBy || 'manual'];
               const StatusIcon = status.icon;
               const SideIcon = side.icon;
 
@@ -59,11 +66,9 @@ export function TransactionTable() {
                       <Badge variant={tx.status === 'success' ? 'success' : tx.status === 'failed' ? 'destructive' : 'secondary'}>
                         {status.label}
                       </Badge>
-                      {tx.triggeredBy && tx.triggeredBy !== 'manual' && (
-                        <Badge variant="outline" className="text-xs">
-                          {tx.triggeredBy === 'take_profit' ? '止盈' : '止损'}
-                        </Badge>
-                      )}
+                      <span className={cn('text-xs px-1.5 py-0.5 rounded font-medium', trigger.className)}>
+                        {trigger.label}
+                      </span>
                     </div>
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
                       <span>{formatTimestamp(tx.timestamp)}</span>
@@ -73,6 +78,11 @@ export function TransactionTable() {
                       <span className="text-muted-foreground/50">
                         {formatNumber(Number(tx.tokenAmount) / 1e18, 0)} {tx.symbol}
                       </span>
+                      {tx.gasUsed !== undefined && (
+                        <span className="text-neon-yellow/70">
+                          Gas: {formatNumber(Number(tx.gasUsed) / 1e18, 6)} BNB
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
