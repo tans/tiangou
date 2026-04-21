@@ -3,7 +3,7 @@ import { type FlapTokenFeedItem } from '@/lib/flap/types';
 import { formatAddress, formatTimestamp } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, XCircle, Tag, TrendingUp, ChevronDown, Flame, Users, Plus, Wallet } from 'lucide-react';
+import { CheckCircle, XCircle, Tag, TrendingUp, ChevronDown, Flame, Users, Plus, Wallet, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface TokenCardProps {
