@@ -390,6 +390,7 @@ class SniperEngine {
     // Determine which venue to use for selling
     let result: { success: boolean; outputAmount?: bigint; txHash?: string; error?: string };
     let venue: 'flap' | 'pancake' = 'flap';
+    let actualOutput: bigint = 0n;
 
     if (config.externalSellEnabled) {
       try {
@@ -415,6 +416,7 @@ class SniperEngine {
             minOutput,
             config.slippage
           );
+          actualOutput = result.outputAmount ?? pancakeQuote;
         } else {
           result = await sellToken(position.tokenAddress, sellAmount, config.slippage);
         }
@@ -430,7 +432,8 @@ class SniperEngine {
 
     if (result.success && result.txHash) {
       // Get the actual quote from the successful transaction
-      const quote = await quoteExactInput(
+      // Use the actual output from the DEX that was used
+      const quote = venue === 'pancake' ? actualOutput : await quoteExactInput(
         position.tokenAddress,
         '0x0000000000000000000000000000000000000000',
         sellAmount

@@ -167,11 +167,49 @@ function deriveCreatedTokens(events: PortalStreamEvent[]): FlapTokenFeedItem[] {
         if (event.type === 'TokenBought' || event.type === 'TokenSold') {
           // Token has trading activity - ensure it exists
           // This handles the case where TokenCreated was outside our historical window
-          if (!existingToken.name || existingToken.name === 'Unknown') {
+          if (!existingToken) {
             const meta = tokenMetaCache.get(event.token);
             if (meta) {
-              existingToken.name = meta.name;
-              existingToken.symbol = meta.symbol;
+              created.set(event.token, createFeedToken(meta));
+            } else {
+              // TokenCreated was outside window and not in cache - create minimal entry
+              // The token will be properly enriched when full data is fetched
+              const minimalToken: FlapTokenFeedItem = {
+                address: event.token,
+                name: 'Unknown',
+                symbol: '???',
+                version: 'v1',
+                isTaxToken: false,
+                quoteToken: NATIVE_TOKEN_SENTINEL,
+                progress: 0,
+                detectedAt: event.ts ?? Date.now(),
+                tradable: true,
+                hasTgGroup: false,
+              };
+
+              if (event.type === 'TokenBought') {
+                minimalToken.buyTax = event.details.tax as bigint | undefined;
+              } else {
+                minimalToken.sellTax = event.details.tax as bigint | undefined;
+              }
+
+              created.set(event.token, minimalToken);
+            }
+          } else {
+            // Update existing token with trading activity
+            if (event.type === 'TokenBought' && existingToken.buyTax === undefined) {
+              existingToken.buyTax = event.details.tax as bigint | undefined;
+            }
+            if (event.type === 'TokenSold' && existingToken.sellTax === undefined) {
+              existingToken.sellTax = event.details.tax as bigint | undefined;
+            }
+
+            if (!existingToken.name || existingToken.name === 'Unknown') {
+              const meta = tokenMetaCache.get(event.token);
+              if (meta) {
+                existingToken.name = meta.name;
+                existingToken.symbol = meta.symbol;
+              }
             }
           }
         }

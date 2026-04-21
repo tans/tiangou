@@ -72,7 +72,7 @@ export function WalletButton() {
     if (address && isWalletConnected()) {
       getBnbBalance(address).then(setBnbBalance).catch(console.error);
     }
-  }, [address]);
+  }, [address, isConnected]);
 
   if (showSettingsModal) {
     return (
