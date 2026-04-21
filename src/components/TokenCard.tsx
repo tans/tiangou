@@ -11,9 +11,9 @@ interface TokenCardProps {
   isRecent?: boolean;
 }
 
-function formatTaxPercent(bps: number | undefined): string {
+function formatTaxPercent(bps: number | bigint | undefined): string {
   if (bps === undefined) return '-';
-  return `${(bps / 100).toFixed(1)}%`;
+  return `${(Number(bps) / 100).toFixed(1)}%`;
 }
 
 export function TokenCard({ token, isRecent }: TokenCardProps) {
