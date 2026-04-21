@@ -19,7 +19,11 @@ let historicalTokens: FlapTokenFeedItem[] = [];
 let lastFetchBlock = 0n;
 const tokenMetaCache = new Map<Address, PortalTokenMeta>();
 
-async function fetchLogsWithRetry(publicClient: ReturnType<typeof getPublicClient>, params: Record<string, unknown>, retries = 3) {
+async function fetchLogsWithRetry(
+  publicClient: ReturnType<typeof getPublicClient>,
+  params: Record<string, unknown>,
+  retries = 3,
+) {
   for (let attempt = 0; attempt < retries; attempt += 1) {
     try {
       return await publicClient.getLogs(params as never);
@@ -27,10 +31,13 @@ async function fetchLogsWithRetry(publicClient: ReturnType<typeof getPublicClien
       const isRateLimit =
         error?.message?.includes('limit exceeded') ||
         error?.message?.includes('rate limit') ||
-        error?.message?.includes('429');
+        error?.message?.includes('429') ||
+        error?.message?.includes('request entity too large');
 
       if (isRateLimit && attempt < retries - 1) {
-        await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** attempt));
+        const delay = 1000 * 2 ** attempt;
+        console.log(`[Indexer] Rate limit hit, retrying in ${delay}ms (attempt ${attempt + 1}/${retries})`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
         continue;
       }
 
@@ -39,6 +46,39 @@ async function fetchLogsWithRetry(publicClient: ReturnType<typeof getPublicClien
   }
 
   return [];
+}
+
+// Fetch all events in parallel for a given block range
+async function fetchEventsForChunk(
+  publicClient: ReturnType<typeof getPublicClient>,
+  fromBlock: bigint,
+  toBlock: bigint,
+): Promise<PortalStreamEvent[]> {
+  // Fetch all event types in parallel
+  const results = await Promise.allSettled(
+    FLAP_PORTAL_EVENTS.map((event) =>
+      fetchLogsWithRetry(publicClient, {
+        address: FLAP_PORTAL_ADDRESS,
+        event,
+        fromBlock,
+        toBlock,
+      }).then((logs) => ({ event, logs }))
+    )
+  );
+
+  const events: PortalStreamEvent[] = [];
+  results.forEach((result, index) => {
+    if (result.status === 'rejected') {
+      console.error(`[Indexer] Failed fetching ${FLAP_PORTAL_EVENTS[index].name} for ${fromBlock}-${toBlock}:`, result.reason);
+    } else {
+      const { event, logs } = result.value;
+      logs.forEach((log) => {
+        events.push(normalizeEvent(event.name, log));
+      });
+    }
+  });
+
+  return events;
 }
 
 function createFeedToken(meta: PortalTokenMeta): FlapTokenFeedItem {
@@ -288,24 +328,16 @@ async function fetchPortalSnapshot(fromBlock: bigint, toBlock: bigint) {
   const publicClient = getPublicClient();
   const events: PortalStreamEvent[] = [];
 
+  // Process chunks in sequence (to avoid overwhelming the RPC)
+  // But within each chunk, fetch all event types in parallel
   for (let start = fromBlock; start <= toBlock; start += CHUNK_SIZE) {
     const end = start + CHUNK_SIZE - 1n > toBlock ? toBlock : start + CHUNK_SIZE - 1n;
 
-    for (const event of FLAP_PORTAL_EVENTS) {
-      try {
-        const logs = await fetchLogsWithRetry(publicClient, {
-          address: FLAP_PORTAL_ADDRESS,
-          event,
-          fromBlock: start,
-          toBlock: end,
-        });
-
-        logs.forEach((log) => {
-          events.push(normalizeEvent(event.name, log));
-        });
-      } catch (error) {
-        console.error(`[Indexer] Failed fetching ${event.name} for ${start}-${end}:`, error);
-      }
+    try {
+      const chunkEvents = await fetchEventsForChunk(publicClient, start, end);
+      events.push(...chunkEvents);
+    } catch (error) {
+      console.error(`[Indexer] Failed fetching chunk ${start}-${end}:`, error);
     }
   }
 
