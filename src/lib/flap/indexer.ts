@@ -345,6 +345,14 @@ async function applySnapshot(
     store.setLatestCreatedTokens(mergedLatest);
   }
 
+  // Debug: log portal events update
+  console.log('[Indexer] applySnapshot', {
+    isInitial,
+    eventCount: snapshot.events.length,
+    createdTokenCount: snapshot.createdTokens.length,
+    portalEventsLength: store.portalEvents.length
+  });
+
   historicalTokens = isInitial
     ? snapshot.createdTokens
     : mergeLatestCreatedTokens(
