@@ -40,6 +40,7 @@ interface CachedEntry {
 
 // Load cache from localStorage
 function loadCacheFromStorage(): void {
+  if (typeof window === 'undefined') return;
   try {
     const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (!stored) return;
@@ -66,8 +67,10 @@ function loadCacheFromStorage(): void {
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
 function scheduleSaveToStorage(): void {
+  if (typeof window === 'undefined') return;
   if (saveTimeout) clearTimeout(saveTimeout);
   saveTimeout = setTimeout(() => {
+    if (typeof window === 'undefined') return;
     try {
       const entries: CachedEntry[] = Array.from(symbolCache.values()).map(meta => ({
         meta,
@@ -238,7 +241,9 @@ export function clearCache(): void {
   }
 
   try {
-    localStorage.removeItem(LOCAL_STORAGE_KEY);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
+    }
   } catch (error) {
     console.warn('[token-cache] Failed to clear localStorage:', error);
   }
