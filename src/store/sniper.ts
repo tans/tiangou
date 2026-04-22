@@ -264,11 +264,15 @@ export const useSniperStore = create<SniperState>((set) => ({
 
   setTokens: (tokens) => set({ detectedTokens: tokens, recentToken: tokens[0] || null }),
 
-  setPortalEvents: (events) => set({ portalEvents: events }),
+  setPortalEvents: (events) => {
+    console.log('[Store] setPortalEvents called', { count: events.length, firstEvent: events[0]?.id });
+    set({ portalEvents: events });
+  },
 
-  prependPortalEvents: (events) => set((state) => ({
-    portalEvents: [...events, ...state.portalEvents].slice(0, 100),
-  })),
+  prependPortalEvents: (events) => set((state) => {
+    console.log('[Store] prependPortalEvents called', { count: events.length, firstEvent: events[0]?.id, currentLength: state.portalEvents.length });
+    return { portalEvents: [...events, ...state.portalEvents].slice(0, 100) };
+  }),
 
   setLatestCreatedTokens: (tokens) => set({ latestCreatedTokens: tokens }),
 }));

@@ -26,8 +26,12 @@ export function PortalEventStream() {
 
   // Update prevEventsLengthRef when portalEvents changes
   useEffect(() => {
-    prevEventsLengthRef.current = portalEvents.length;
-    console.debug('[PortalEventStream] portalEvents updated, count:', portalEvents.length);
+    const prevLength = prevEventsLengthRef.current;
+    const nowLength = portalEvents.length;
+    prevEventsLengthRef.current = nowLength;
+    if (prevLength !== nowLength) {
+      console.log('[PortalEventStream] Events updated:', { prev: prevLength, now: nowLength, change: nowLength - prevLength });
+    }
   }, [portalEvents]);
 
   // Detect loading state: connecting with no events yet, or just started monitoring
