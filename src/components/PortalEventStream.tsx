@@ -19,6 +19,7 @@ export function PortalEventStream() {
   const [resolvedMeta, setResolvedMeta] = useState<Map<string, TokenMeta>>(new Map());
   const [isRefreshing, setIsRefreshing] = useState(false);
   const resolvedMetaRef = useRef(resolvedMeta);
+  const processingTokensRef = useRef<Set<string>>(new Set());
   const prevEventsLengthRef = useRef(portalEvents.length);
 
   // Keep ref in sync with state
@@ -49,21 +50,31 @@ export function PortalEventStream() {
     setTimeout(() => setIsRefreshing(false), 500);
   }, [setPortalEvents]);
 
-  // Resolve token metadata when events come in
+  // Resolve token metadata when new events arrive
   useEffect(() => {
     const uniqueTokens = [...new Set(portalEvents.map(ev => ev.token))];
 
+    // Filter to tokens not yet resolved AND not currently being processed
+    const tokensToFetch = uniqueTokens.filter(addr => {
+      const addrLower = addr.toLowerCase();
+      if (resolvedMetaRef.current.has(addrLower)) return false;
+      if (processingTokensRef.current.has(addrLower)) return false;
+      return true;
+    });
+
+    if (tokensToFetch.length === 0) return;
+
+    // Mark as processing
+    tokensToFetch.forEach(addr => processingTokensRef.current.add(addr.toLowerCase()));
+
     Promise.all(
-      uniqueTokens.map(async (addr) => {
+      tokensToFetch.map(async (addr) => {
         const addrLower = addr.toLowerCase();
-        // Skip already resolved (check at promise time to avoid redundant fetches)
-        if (resolvedMetaRef.current.has(addrLower)) return null;
         const meta = await getTokenMeta(addr as Address);
-        if (meta) return { addr: addrLower, meta };
-        return null;
+        return { addr: addrLower, meta };
       })
     ).then(results => {
-      const newEntries = results.filter((r): r is { addr: string; meta: TokenMeta } => r !== null);
+      const newEntries = results.filter((r): r is { addr: string; meta: TokenMeta } => r !== null && r.meta !== null);
       if (newEntries.length > 0) {
         setResolvedMeta(prev => {
           const next = new Map(prev);
@@ -71,8 +82,11 @@ export function PortalEventStream() {
           return next;
         });
       }
+    }).finally(() => {
+      // Clear processing flag
+      tokensToFetch.forEach(addr => processingTokensRef.current.delete(addr.toLowerCase()));
     });
-  }, [portalEvents]);
+  }, [portalEvents.length]);
 
   // Filter to only TokenBought/TokenSold, group by token, keep latest event per token
   const tradeEvents = useMemo(() => {
