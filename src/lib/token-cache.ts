@@ -30,6 +30,58 @@ export interface TokenMeta {
 const symbolCache = new Map<Address, TokenMeta>();
 const reverseCache = new Map<string, Address>();
 
+const LOCAL_STORAGE_KEY = 'token_meta_cache';
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+interface CachedEntry {
+  meta: TokenMeta;
+  timestamp: number;
+}
+
+// Load cache from localStorage
+function loadCacheFromStorage(): void {
+  try {
+    const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (!stored) return;
+
+    const entries: CachedEntry[] = JSON.parse(stored);
+    const now = Date.now();
+
+    for (const entry of entries) {
+      // Skip expired entries
+      if (now - entry.timestamp > CACHE_TTL_MS) continue;
+
+      const address = entry.meta.address.toLowerCase() as Address;
+      symbolCache.set(address, entry.meta);
+      reverseCache.set(entry.meta.symbol.toUpperCase(), address);
+    }
+
+    console.debug(`[token-cache] Loaded ${symbolCache.size} tokens from localStorage`);
+  } catch (error) {
+    console.warn('[token-cache] Failed to load cache from localStorage:', error);
+  }
+}
+
+// Save cache to localStorage (debounced via immediate write on mutation)
+let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleSaveToStorage(): void {
+  if (saveTimeout) clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(() => {
+    try {
+      const entries: CachedEntry[] = Array.from(symbolCache.values()).map(meta => ({
+        meta,
+        timestamp: Date.now(),
+      }));
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(entries));
+      console.debug(`[token-cache] Saved ${entries.length} tokens to localStorage`);
+    } catch (error) {
+      console.warn('[token-cache] Failed to save cache to localStorage:', error);
+    }
+    saveTimeout = null;
+  }, 1000); // Debounce writes by 1 second
+}
+
 // Default cache entries for common tokens (BNB chain)
 const DEFAULT_TOKENS: TokenMeta[] = [
   {
@@ -68,6 +120,7 @@ function initDefaultTokens() {
 }
 
 initDefaultTokens();
+loadCacheFromStorage();
 
 /**
  * Fetch token metadata from ERC20 contract
@@ -113,6 +166,7 @@ export async function getTokenMeta(address: Address): Promise<TokenMeta | null> 
   if (meta) {
     symbolCache.set(normalizedAddress, meta);
     reverseCache.set(meta.symbol.toUpperCase(), normalizedAddress);
+    scheduleSaveToStorage();
   }
 
   return meta;
@@ -162,6 +216,7 @@ export function preloadTokens(tokens: TokenMeta[]): void {
     symbolCache.set(token.address.toLowerCase() as Address, token);
     reverseCache.set(token.symbol.toUpperCase(), token.address.toLowerCase() as Address);
   }
+  scheduleSaveToStorage();
 }
 
 /**
@@ -180,5 +235,11 @@ export function clearCache(): void {
     if (!defaultAddresses.has(address.toLowerCase())) {
       reverseCache.delete(symbol);
     }
+  }
+
+  try {
+    localStorage.removeItem(LOCAL_STORAGE_KEY);
+  } catch (error) {
+    console.warn('[token-cache] Failed to clear localStorage:', error);
   }
 }
