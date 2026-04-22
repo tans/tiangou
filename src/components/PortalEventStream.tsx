@@ -42,7 +42,7 @@ export function PortalEventStream() {
     if (status === 'connecting') return true;
     if (status === 'monitoring' && portalEvents.length === 0) return true;
     return false;
-  }, [status, portalEvents.length]);
+  }, [status, portalEvents.length, portalEventsVersion]);
 
   // Handle refresh - clear events and wait for new ones
   const handleRefresh = useCallback(() => {
@@ -88,7 +88,7 @@ export function PortalEventStream() {
       // Clear processing flag
       tokensToFetch.forEach(addr => processingTokensRef.current.delete(addr.toLowerCase()));
     });
-  }, [portalEvents.length]);
+  }, [portalEvents.length, portalEventsVersion]);
 
   // Filter to only TokenBought/TokenSold, group by token, keep latest event per token
   const tradeEvents = useMemo(() => {
@@ -102,7 +102,7 @@ export function PortalEventStream() {
       seen.set(addr, { event: ev, side });
     }
     return Array.from(seen.values());
-  }, [portalEvents]);
+  }, [portalEvents, portalEventsVersion]);
 
   return (
     <TooltipProvider>
