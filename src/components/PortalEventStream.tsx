@@ -68,7 +68,7 @@ export function PortalEventStream() {
         });
       }
     });
-  }, [portalEvents, resolvedMeta]);
+  }, [portalEvents]);
 
   // Filter to only TokenBought/TokenSold, group by token, keep latest event per token
   const tradeEvents = useMemo(() => {

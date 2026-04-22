@@ -175,7 +175,7 @@ function deriveCreatedTokens(events: PortalStreamEvent[]): FlapTokenFeedItem[] {
   const created = new Map<Address, FlapTokenFeedItem>();
 
   [...events]
-    .sort((left, right) => (left.ts ?? 0) - (right.ts ?? 0))
+    .sort((left, right) => (right.ts ?? 0) - (left.ts ?? 0))
     .forEach((event) => {
       // Check if this event belongs to a token we know about (from meta cache)
       // even if we don't have a TokenCreated event for it

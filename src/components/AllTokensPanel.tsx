@@ -67,7 +67,7 @@ export function AllTokensPanel() {
         });
       }
     });
-  }, [portalEvents, resolvedMeta]);
+  }, [portalEvents]);
 
   // Calculate prices from trade events
   useEffect(() => {
@@ -91,7 +91,7 @@ export function AllTokensPanel() {
       }
       return next;
     });
-  }, [portalEvents, tokenPrices]);
+  }, [portalEvents]);
 
   // Group all tokens from events, keep latest event per token
   const allTokens = useMemo(() => {
