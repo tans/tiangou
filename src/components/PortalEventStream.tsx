@@ -15,6 +15,8 @@ interface TokenTradeEvent {
 }
 
 export function PortalEventStream() {
+  // Subscribe to portalEventsVersion to force re-render when events update
+  const portalEventsVersion = useSniperStore((state) => state.portalEventsVersion);
   const { portalEvents, status, setPortalEvents } = useSniperStore();
   const [resolvedMeta, setResolvedMeta] = useState<Map<string, TokenMeta>>(new Map());
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -33,7 +35,7 @@ export function PortalEventStream() {
     if (prevLength !== nowLength) {
       console.log('[PortalEventStream] Events updated:', { prev: prevLength, now: nowLength, change: nowLength - prevLength });
     }
-  }, [portalEvents]);
+  }, [portalEvents, portalEventsVersion]);
 
   // Detect loading state: connecting with no events yet, or just started monitoring
   const isLoading = useMemo(() => {

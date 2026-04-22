@@ -98,6 +98,7 @@ interface SniperState {
   detectedTokens: FlapTokenFeedItem[];
   recentToken: FlapTokenFeedItem | null;
   portalEvents: PortalStreamEvent[];
+  portalEventsVersion: number;
   latestCreatedTokens: FlapTokenFeedItem[];
 
   // Positions
@@ -163,6 +164,7 @@ export const useSniperStore = create<SniperState>((set) => ({
   detectedTokens: [],
   recentToken: null,
   portalEvents: [],
+  portalEventsVersion: 0,
   latestCreatedTokens: [],
 
   positions: [],
@@ -266,12 +268,12 @@ export const useSniperStore = create<SniperState>((set) => ({
 
   setPortalEvents: (events) => {
     console.log('[Store] setPortalEvents called', { count: events.length, firstEvent: events[0]?.id });
-    set({ portalEvents: events });
+    set((state) => ({ portalEvents: events, portalEventsVersion: state.portalEventsVersion + 1 }));
   },
 
   prependPortalEvents: (events) => set((state) => {
     console.log('[Store] prependPortalEvents called', { count: events.length, firstEvent: events[0]?.id, currentLength: state.portalEvents.length });
-    return { portalEvents: [...events, ...state.portalEvents].slice(0, 100) };
+    return { portalEvents: [...events, ...state.portalEvents].slice(0, 100), portalEventsVersion: state.portalEventsVersion + 1 };
   }),
 
   setLatestCreatedTokens: (tokens) => set({ latestCreatedTokens: tokens }),

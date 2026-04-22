@@ -38,10 +38,14 @@ interface CachedEntry {
   timestamp: number;
 }
 
-// Load cache from localStorage
+// Load cache from localStorage (SSR-safe)
 function loadCacheFromStorage(): void {
+  // Skip localStorage during SSR/build or when localStorage is unavailable
   if (typeof window === 'undefined') return;
   try {
+    // Verify localStorage is actually available (some SSR environments define window but not localStorage)
+    if (typeof localStorage === 'undefined') return;
+
     const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (!stored) return;
 
