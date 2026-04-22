@@ -2,6 +2,7 @@ import { createPublicClient, createWalletClient, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { bsc } from 'viem/chains';
 import { FLAP_PORTAL_ADDRESSES, BNB_MAINNET_CHAIN_ID, NATIVE_TOKEN_SENTINEL } from './constants';
+import { toast } from '@/store/toast';
 
 // Default RPC endpoints (in priority order)
 const DEFAULT_RPC_URLS = [
@@ -26,6 +27,13 @@ function createBnbChain(rpcUrl?: string) {
 
 // Current RPC URL
 let currentRpcUrl = DEFAULT_RPC_URLS[0];
+let currentRpcIndex = 0;
+
+// RPC connection state
+export type RpcStatus = 'connected' | 'degraded' | 'disconnected';
+let rpcStatus: RpcStatus = 'connected';
+let consecutiveFailures = 0;
+const MAX_CONSECUTIVE_FAILURES = 3;
 
 // Public client for reading blockchain data
 let publicClient = createPublicClient({
@@ -39,6 +47,138 @@ export type FlapWalletClient = ReturnType<typeof createWalletClient>;
 // Current wallet account
 let currentAccount: ReturnType<typeof privateKeyToAccount> | null = null;
 export let walletClient: FlapWalletClient | null = null;
+
+/**
+ * Get current RPC status
+ */
+export function getRpcStatus(): RpcStatus {
+  return rpcStatus;
+}
+
+/**
+ * Get current RPC URL
+ */
+export function getRpcUrl(): string {
+  return currentRpcUrl;
+}
+
+/**
+ * Internal: Set RPC status and show toast notification if changed
+ */
+function setRpcStatus(newStatus: RpcStatus, reason?: string) {
+  const oldStatus = rpcStatus;
+  rpcStatus = newStatus;
+
+  if (newStatus !== oldStatus) {
+    if (newStatus === 'disconnected') {
+      toast.error('RPC连接失败', `正在切换到备用节点... ${reason || ''}`);
+    } else if (newStatus === 'degraded') {
+      toast.warning('RPC连接不稳定', reason || '网络延迟较高');
+    } else if (newStatus === 'connected' && oldStatus !== 'connected') {
+      toast.success('RPC已恢复', `当前节点: ${currentRpcUrl}`);
+    }
+  }
+}
+
+/**
+ * Internal: Attempt to switch to next available RPC endpoint
+ */
+async function switchToNextRpc(): Promise<boolean> {
+  const nextIndex = (currentRpcIndex + 1) % DEFAULT_RPC_URLS.length;
+  const nextRpc = DEFAULT_RPC_URLS[nextIndex];
+
+  console.log(`[RPC] Attempting switch from ${currentRpcUrl} to ${nextRpc}`);
+
+  // Test the new RPC with a simple call
+  const testClient = createPublicClient({
+    chain: createBnbChain(nextRpc),
+    transport: http(),
+  });
+
+  try {
+    // Quick timeout test - wait max 3 seconds
+    const timeoutPromise = new Promise<'timeout'>((resolve) =>
+      setTimeout(() => resolve('timeout'), 3000)
+    );
+    const chainIdPromise = testClient.getChainId();
+
+    const result = await Promise.race([chainIdPromise, timeoutPromise]);
+
+    if (result === 'timeout') {
+      console.log(`[RPC] Timeout testing ${nextRpc}, trying next...`);
+      return false;
+    }
+
+    // Success - switch to this RPC
+    currentRpcIndex = nextIndex;
+    currentRpcUrl = nextRpc;
+
+    // Recreate public client
+    publicClient = createPublicClient({
+      chain: createBnbChain(nextRpc),
+      transport: http(),
+    });
+
+    // Recreate wallet client if connected
+    if (walletClient && currentAccount) {
+      walletClient = createWalletClient({
+        account: currentAccount,
+        chain: createBnbChain(nextRpc),
+        transport: http(),
+      });
+    }
+
+    setRpcStatus('connected');
+    toast.info('已切换RPC节点', nextRpc);
+    return true;
+  } catch (error) {
+    console.log(`[RPC] Failed to test ${nextRpc}:`, error);
+    return false;
+  }
+}
+
+/**
+ * Internal: Called by RPC operations to report success/failure
+ */
+export function reportRpcResult(success: boolean) {
+  if (success) {
+    consecutiveFailures = 0;
+    if (rpcStatus === 'degraded') {
+      setRpcStatus('connected');
+    }
+  } else {
+    consecutiveFailures++;
+    console.log(`[RPC] Consecutive failures: ${consecutiveFailures}/${MAX_CONSECUTIVE_FAILURES}`);
+
+    if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+      setRpcStatus('disconnected', `连续${consecutiveFailures}次失败`);
+
+      // Attempt automatic failover
+      void attemptAutomaticFailover();
+    } else if (consecutiveFailures >= 2) {
+      setRpcStatus('degraded', `连续${consecutiveFailures}次警告`);
+    }
+  }
+}
+
+/**
+ * Attempt automatic failover to next RPC endpoint
+ */
+async function attemptAutomaticFailover(): Promise<void> {
+  console.log('[RPC] Attempting automatic failover...');
+
+  for (let i = 0; i < DEFAULT_RPC_URLS.length; i++) {
+    const success = await switchToNextRpc();
+    if (success) {
+      console.log('[RPC] Failover successful');
+      return;
+    }
+  }
+
+  console.log('[RPC] All RPC endpoints failed');
+  toast.error('RPC全部故障', '请检查网络连接或稍后重试');
+  setRpcStatus('disconnected', '所有节点不可用');
+}
 
 /**
  * Set custom RPC URL
@@ -60,13 +200,9 @@ export function setRpcUrl(rpcUrl: string): void {
       transport: http(),
     });
   }
-}
 
-/**
- * Get current RPC URL
- */
-export function getRpcUrl(): string {
-  return currentRpcUrl;
+  consecutiveFailures = 0;
+  setRpcStatus('connected');
 }
 
 /**
@@ -98,6 +234,10 @@ export function initWalletClient(privateKey: string, rpcUrl?: string): void {
       transport: http(),
     });
   }
+
+  // Reset failure counter on manual wallet init
+  consecutiveFailures = 0;
+  setRpcStatus('connected');
 }
 
 /**

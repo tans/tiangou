@@ -1,7 +1,7 @@
 import { readContract } from 'viem/actions';
 import { FLAP_PORTAL_ABI } from './abi';
 import { FLAP_PORTAL_ADDRESSES, BNB_MAINNET_CHAIN_ID, NATIVE_TOKEN_SENTINEL } from './constants';
-import { getPublicClient, walletClient, getAccountAddress } from './client';
+import { getPublicClient, walletClient, getAccountAddress, reportRpcResult } from './client';
 import type { Address } from 'viem';
 
 const FLAP_PORTAL_ADDRESS = FLAP_PORTAL_ADDRESSES[BNB_MAINNET_CHAIN_ID];
@@ -14,18 +14,23 @@ export async function quoteExactInput(
   outputToken: string,
   inputAmount: bigint
 ): Promise<bigint> {
-  const result = await readContract(getPublicClient(), {
-    address: FLAP_PORTAL_ADDRESS as `0x${string}`,
-    abi: FLAP_PORTAL_ABI,
-    functionName: 'quoteExactInput',
-    args: [{
-      inputToken: inputToken as `0x${string}`,
-      outputToken: outputToken as `0x${string}`,
-      inputAmount,
-    }],
-  });
-
-  return result as bigint;
+  try {
+    const result = await readContract(getPublicClient(), {
+      address: FLAP_PORTAL_ADDRESS as `0x${string}`,
+      abi: FLAP_PORTAL_ABI,
+      functionName: 'quoteExactInput',
+      args: [{
+        inputToken: inputToken as `0x${string}`,
+        outputToken: outputToken as `0x${string}`,
+        inputAmount,
+      }],
+    });
+    reportRpcResult(true);
+    return result as bigint;
+  } catch (error) {
+    reportRpcResult(false);
+    throw error;
+  }
 }
 
 /**
@@ -117,5 +122,12 @@ export async function sellToken(
  * Get BNB balance for an address
  */
 export async function getBnbBalance(address: string): Promise<bigint> {
-  return getPublicClient().getBalance({ address: address as `0x${string}` });
+  try {
+    const balance = await getPublicClient().getBalance({ address: address as `0x${string}` });
+    reportRpcResult(true);
+    return balance;
+  } catch (error) {
+    reportRpcResult(false);
+    throw error;
+  }
 }

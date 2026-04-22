@@ -2,7 +2,7 @@ import { type Address } from 'viem';
 
 import { useSniperStore } from '@/store/sniper';
 import { FLAP_PORTAL_EVENTS } from './abi';
-import { getPublicClient } from './client';
+import { getPublicClient, reportRpcResult } from './client';
 import { FLAP_PORTAL_ADDRESSES, BNB_MAINNET_CHAIN_ID, NATIVE_TOKEN_SENTINEL } from './constants';
 import { buildPortalEventSummary, mergeLatestCreatedTokens } from './portal-feed';
 import type { FlapTokenFeedItem, PortalStreamEvent, PortalTokenMeta } from './types';
@@ -26,7 +26,9 @@ async function fetchLogsWithRetry(
 ) {
   for (let attempt = 0; attempt < retries; attempt += 1) {
     try {
-      return await publicClient.getLogs(params as never);
+      const result = await publicClient.getLogs(params as never);
+      reportRpcResult(true);
+      return result;
     } catch (error: any) {
       const isRateLimit =
         error?.message?.includes('limit exceeded') ||
@@ -41,6 +43,7 @@ async function fetchLogsWithRetry(
         continue;
       }
 
+      reportRpcResult(false);
       throw error;
     }
   }
@@ -437,6 +440,7 @@ export function startTokenFeedPolling(
     try {
       const publicClient = getPublicClient();
       const blockNumber = await publicClient.getBlockNumber();
+      reportRpcResult(true);
       const fromBlock = blockNumber - BigInt(BLOCKS_PER_HALF_HOUR);
       const snapshot = await fetchPortalSnapshot(fromBlock, blockNumber);
 
@@ -448,12 +452,14 @@ export function startTokenFeedPolling(
       }
     } catch (error) {
       console.error('[Indexer] Initial load failed:', error);
+      reportRpcResult(false);
     }
 
     pollingInterval = setInterval(async () => {
       try {
         const publicClient = getPublicClient();
         const blockNumber = await publicClient.getBlockNumber();
+        reportRpcResult(true);
 
         if (blockNumber <= lastFetchBlock) {
           console.log('[Indexer] Polling: block number not advanced', { blockNumber, lastFetchBlock });
@@ -471,6 +477,7 @@ export function startTokenFeedPolling(
         }
       } catch (error) {
         console.error('[Indexer] Polling error:', error);
+        reportRpcResult(false);
       }
     }, intervalMs);
   };
